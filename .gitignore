@@ -1,0 +1,29 @@
+# virtual environments (all depths)
+**/venv/
+**/.env/
+**/.env.*.local
+
+# core latex/pdflatex auxiliary file (all depths)
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+
+# jupyter notebook checkpoints (all depths)
+**/.ipynb_checkpoints/
+# python test cache
+.pytest_cache/
+
+# Model weights and checkpoints (all depths)
+*.pt
+*.pth
+*.ckpt
+*.h5
