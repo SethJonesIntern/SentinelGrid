@@ -1,0 +1,291 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[margin=1in]{geometry}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=blue
+]{hyperref}
+
+\title{COP4934 Senior Design 1 Scrum \& Meetings }
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+\subsection{Sprint Planning}
+Sprint Planning is an agile event where the scrum team defines the work to be completed during the upcoming sprint. The team establishes a clear sprint goal, selects high-priority items from the product backlog, and breaks them into technical tasks to form the Sprint Backlog. This meeting aligns the team on what can be delivered by the end of the sprint and how the work will be accomplished.
+\begin{itemize}
+    \item \textbf{Focus:} Planning the upcoming sprint and defining the sprint goal
+    \item \textbf{Goal:} Decide what work will be done in the sprint and how it will be completed.
+    \item \textbf{Participants:} Scrum Team (Developers, Product Owner, Scrum Master)
+    \item \textbf{Outcome:} Sprint Goal, Sprint Backlog, and a shared understanding of the planned work
+\end{itemize}
+\subsection{Sprint Review}
+Sprint Review is held at the end of a sprint to evaluate the completed product increment. The scrum team demonstrates finished work, gathers feedback from stakeholders, and discusses progress toward the overall product goals. The outcome of the review is an updated product backlog and a shared understanding of what was accomplished and what should be prioritized next.
+\begin{itemize}
+    \item \textbf{Focus:} The Product Increment (what was built)
+    \item \textbf{Goal:} Inspect the increment, get stakeholder feedback, and adapt the Product Backlog
+    \item \textbf{Participants:} Scrum Team (Developers, PO, SM) + Stakeholders.
+    \item \textbf{Outcome:} Updated Product Backlog, shared understanding of progress, feedback for future work
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+Sprint Retrospective is an internal scrum team meeting focused on improving the team’s development process. The team reflects on what went well, what challenges were encountered, and how collaboration, tools, or workflows can be improved. The result is a set of actionable improvements that the team commits to applying in the next sprint.
+
+\begin{itemize}
+    \item \textbf{Focus:} The Process (how the team works)
+    \item \textbf{Goal:} Inspect the team's people, processes, and tools; identify improvements
+    \item \textbf{Participants:} Scrum Team only (internal event)
+    \item \textbf{Outcome:} Actionable improvements to the team's process/collaboration for the next sprint
+\end{itemize}
+\section{Meeting Minutes}
+\subsection{2-16-2026}
+Everyone in the team attended the meeting. During this meeting, we assigned the tasks for sprint 1. In the span of the next two weeks, each role will have their own assigned tasks dedicated for their roles, but we will work towards the overall objective of having a basic skeleton or backbone (low implementation) of our project set up and aim to have it dockerized and able to run on everyone's computer. Went through the Jira and added all the tasks and assigned them. Everyone will be in charge of updating their progress of each task on Jira. Below are the tasks that were assigned to each role:
+\begin{itemize}
+    \item Cybersecurity/Honeypot Lead:
+    \begin{itemize}
+        \item Choose honeypot method: decide on cowrite or custom SSH
+        \item Deploy first honeypot logging the user, pass, commands, and IP
+        \item Define threat boundaries: what attacker can do, what they cannot do, and what is logged
+        \item Export logs as JSON or CSV with one file per session
+       \item \textbf{ Hard Deliverable:} A running SSH honeypot that logs real attacker sessions.
+    \end{itemize}
+    \item Backend Systems Engineer:
+    \begin{itemize}
+        \item Scaffold backend: Fast API, routes, models, services 
+        \item Create API: POST, GET
+        \item Parse incoming honeypot logs: have framework to implement once backend is fully setup 
+        \item Dockerize backend
+        \item \textbf{Hard Deliverable:} Backend service that accepts attack logs via HTTP.
+    \end{itemize}
+    \item Database Engineer:
+    \begin{itemize}
+        \item Design schema tables: sessions, events, credentials
+        \item Implement SQL init script 
+        \item Connect backend to accept inserts and test queries
+        \item Write sample analytic queries
+        \item \textbf{Hard Deliverable:} Postgres with real tables storing attack data.
+    \end{itemize}
+    \item Frontend Visualization Engineer: 
+    \begin{itemize}
+        \item Scaffold React App: layout, navigation
+        \item Create Views: sessions table and detail page
+        \item Connect backend: fetch and render data
+        \item Dockerize frontend
+        \item \textbf{Hard Deliverable:} Dashboard that displays real or mock sessions.
+    \end{itemize}
+    \item ML Threat Analysis:
+    \begin{itemize}
+        \item Define ML Problem: clustering or anomaly detection
+        \item Design features: session duration, command count, password entropy
+        \item Write pipeline: load data, compute features, plot distributions
+        \item \textbf{Hard Deliverable:} Jupyter notebook that processes attack data.
+    \end{itemize}
+\end{itemize}
+\section{Sprint 0 : 2/1/2026 - 2/15/2026}
+\subsection{Goal}
+Our goal for Sprint 0 is to set the foundation of our project and to establish a clear semester plan.
+\subsection{Sprint Planning}
+The focus of Sprint 0 is to plan the foundation required to establish a clear semester plan. Our team talked about our skills, preferred programming languages, experience, and what we would each like to do in order to figure out everyone's roles and responsibilities. This will help us figure out what each member needs to develop and learn this semester and clear up any questions before we start implementation. 
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \\By the end of this sprint, we will deliver a draft of our semester plan that clearly defines team roles, responsibilities, learning gaps, and requirements of the project.
+    \item How will we build it? 
+    \\We will have a meeting to collaboratively develop the semester plan including planning weekly meetings. Responsibilities will be assigned based on individual strengths and learning goals, and the plan will be documented and reviewed to ensure alignment with project objectives.
+    \item What must be done vs nice:
+    \\\textbf{Must be done:} defining team roles, assigning responsibilities, identifying required skills and knowledge
+    \\\textbf{Nice to have:} detailed stretch goals and general requirements
+
+\end{itemize}
+
+\subsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \item What worked well:
+    \item Feedback received:
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What went well during the sprint:
+    \item What challenges or obstacles were encountered:
+    \item What could be improved in future sprints:
+    \item Action items to implement in the next sprint:
+\end{itemize}
+
+
+\section{Sprint 1 : 2/15/2026 - 3/1/2026}
+\subsection{Goal}
+Our goal for Sprint 1 is to complete the design proposal and team contract with the focus on developing the skills and knowledge required for each team role.
+
+\subsection{Sprint Planning}
+[Description/Summary...]
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+   
+    \item How will we build it? 
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \\\textbf{Nice to have:}
+
+\end{itemize}
+
+\subsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \item What worked well:
+    \item Feedback received:
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What went well during the sprint:
+    \item What challenges or obstacles were encountered:
+    \item What could be improved in future sprints:
+    \item Action items to implement in the next sprint:
+\end{itemize}
+
+
+
+\section{Sprint 2 : 3/1/2026 - 3/15/2026}
+\subsection{Goal}
+...
+\subsection{Sprint Planning}
+[Description/Summary...]
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+   
+    \item How will we build it? 
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \\\textbf{Nice to have:}
+
+\end{itemize}
+
+\subsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \item What worked well:
+    \item Feedback received:
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What went well during the sprint:
+    \item What challenges or obstacles were encountered:
+    \item What could be improved in future sprints:
+    \item Action items to implement in the next sprint:
+\end{itemize}
+
+\section{Sprint 3 : 3/15/2026 - 3/29/2026}
+\subsection{Goal}
+...
+
+\subsection{Sprint Planning}
+[Description/Summary...]
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+   
+    \item How will we build it? 
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \\\textbf{Nice to have:}
+
+\end{itemize}
+
+\subsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \item What worked well:
+    \item Feedback received:
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What went well during the sprint:
+    \item What challenges or obstacles were encountered:
+    \item What could be improved in future sprints:
+    \item Action items to implement in the next sprint:
+\end{itemize}
+
+\section{Sprint 5 : 4/12/2026 - 4/26/2026}
+\subsection{Goal}
+...
+
+\subsection{Sprint Planning}
+[Description/Summary...]
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+   
+    \item How will we build it? 
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \\\textbf{Nice to have:}
+
+\end{itemize}
+
+\subsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \item What worked well:
+    \item Feedback received:
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+\end{itemize}
+
+\subsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What went well during the sprint:
+    \item What challenges or obstacles were encountered:
+    \item What could be improved in future sprints:
+    \item Action items to implement in the next sprint:
+\end{itemize}
+
+\end{document}
