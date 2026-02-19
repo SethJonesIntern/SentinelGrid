@@ -27,5 +27,7 @@ SentinelGrid is a cybersecurity analytics platform designed to capture, analyze,
 
 
 ## Documentation
-- All Scrum and meeting minutes are stored in `documentation/minutes.tex`. This file is updated after every meeting and tracks the team's Scrum activities such as sprint planning and reviews.  
-You can also view it online here: https://www.overleaf.com/read/xrkfjnhyfbyc#b863a6
+- All Scrum and meeting minutes are updated and stored in `documentation/minutes.tex`. This file is updated after every meeting and tracks the team's Scrum activities such as sprint planning and reviews. 
+You can view it here: [Project Meeting Minutes (PDF)](documentation/minutes.pdf).
+- Yama's personal progress documentation are updated and stored in `documentation/yamasdoc.tex`. This file contains weekly progress updates detailing contributions towards the project. 
+You can view it here: [Yama's Documentation (PDF)](documentation/yamasdoc.pdf)

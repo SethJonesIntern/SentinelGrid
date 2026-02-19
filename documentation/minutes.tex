@@ -119,37 +119,67 @@ The team reviewed the following:
 
 \begin{itemize}
     \item What was completed during the sprint:
+    \\Weekly meeting times were agreed upon to take place online every Mondays at 12pm and in person meetings will take place as needed. We defined team roles, assigned responsibilities, each member had an idea of required skills and tools they needed to learn.
     \item What worked well:
+    \\Communication about everyone's background and skills helped the team assign roles effectively. Collaboration during planning ensured that everyone felt heard and aligned with the project goals and roles.
     \item Feedback received:
+    \\Its important to have certain milestones and deliverables for each sprint. It was also suggested that documentation should be kept updated throughout the semester for each member so we can keep track of what everyone is working on.
+
     \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \\Added tasks for researching required technologies, setting up the GitHub, and creating documentation repository.
+
 \end{itemize}
 
 \subsection{Sprint Retrospective}
 The team discussed:
 
 \begin{itemize}
-    \item What went well during the sprint:
+    \item What went well during the sprint: 
+    \\The team established a clear direction for the semester and ensured everyone understood their responsibilities. Meetings were productive and stayed focused on deliverables and what each person had to do next.
     \item What challenges or obstacles were encountered:
+    \\Aligning everyone’s schedules for the weekly meetings and there was a learning curve when it came to learning how to use and understand Jira
+
     \item What could be improved in future sprints:
+    The team should also break large goals into smaller, more manageable tasks to improve tracking and accountability. Each member is able to create their own sub tasks and other things they are working on and add them to the Jira and update them as they complete them
     \item Action items to implement in the next sprint:
+    \\Set up the development environment, work on project requirements, assign tasks for the next spring
+
 \end{itemize}
 
 
 \section{Sprint 1 : 2/15/2026 - 3/1/2026}
 \subsection{Goal}
-Our goal for Sprint 1 is to complete the design proposal and team contract with the focus on developing the skills and knowledge required for each team role.
+Our goal for Sprint 1 is to complete the design proposal and team contract with the focus on developing the skills and knowledge required for each team role while working on each respective assigned tasks.
 
 \subsection{Sprint Planning}
-[Description/Summary...]
+During the 2/16/2026 meeting, all team members were present and Sprint 1 tasks were assigned. Each team member received role specific responsibilities to work on building a basic skeleton and low implementation of the project. The team aims to have a functional backbone of the system set up, dockerized, and capable of running on all team members' machines by the end of the sprint. All tasks were added to Jira, and each member is responsible for updating their task progress throughout the sprint.
 
 \begin{itemize}
     \item What can we deliver by the end of this sprint? 
-   
+    \begin{itemize}
+        \item A running SSH honeypot that logs attacker sessions (credentials, commands, IP)
+        \item A dockerized backend service that accepts attack logs
+        \item A Postgres database with implemented schema tables (sessions, events, credentials) storing attack data
+        \item A dockerized React frontend that displays real or mock session data
+        \item A Jupyter notebook that processes attack data for clustering or anomaly detection
+        \item A basic, integrated project skeleton that runs locally on all team members' machines
+    \end{itemize}
     \item How will we build it? 
-  
+    \\Each role will focus on completing its assigned  deliverables
+
     \item What must be done vs nice:
     \\\textbf{Must be done:}
-    \\\textbf{Nice to have:}
+    \begin{itemize}
+        \item Dockerize backend and frontend
+        \item Ensure the system skeleton runs locally for everyone 
+        \item Complete the design proposal and team contract.
+    \end{itemize}
+    \textbf{Nice to have:}
+    \begin{itemize}
+        \item Complete all hard deliverables for each role
+        \item Initial integration testing between all components
+        \item Basic analytics visualizations beyond required views
+    \end{itemize}
 
 \end{itemize}
 
