@@ -2,6 +2,7 @@
 **/venv/
 **/.env/
 **/.env.*.local
+**/.env
 
 # core latex/pdflatex auxiliary file (all depths)
 *.aux
@@ -29,3 +30,13 @@
 *.pth
 *.ckpt
 *.h5
+
+
+#ml data ignores
+# CIC IDS Dataset
+machine-learning/data/Kaggle CIC-IDS-2017/*
+!machine-learning/data/Kaggle CIC-IDS-2017/.gitkeep
+
+# Cowrie Honeypot Dataset
+machine-learning/data/Zenodo Honeypot Data/*
+!/data/Zenodo Honeypot Data/.gitkeep
