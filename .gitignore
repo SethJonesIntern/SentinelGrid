@@ -39,4 +39,4 @@ machine-learning/data/Kaggle CIC-IDS-2017/*
 
 # Cowrie Honeypot Dataset
 machine-learning/data/Zenodo Honeypot Data/*
-!/data/Zenodo Honeypot Data/.gitkeep
+!machine-learning/data/Zenodo Honeypot Data/.gitkeep
