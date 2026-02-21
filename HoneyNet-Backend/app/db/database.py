@@ -1,4 +1,3 @@
-# app/db/database.py
 
 import os
 from dotenv import load_dotenv
@@ -6,7 +5,9 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-# Load environment variables from a .env file in the project root (if present)
+from app.db.models import RawLog, Base
+
+# Load environment variables from a .env file in the project root
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -17,7 +18,7 @@ if not DATABASE_URL:
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # checks connections before using them
-    future=True,         # SQLAlchemy 2.0 style behavior
+    future=True,
 )
 
 SessionLocal = sessionmaker(
@@ -26,6 +27,8 @@ SessionLocal = sessionmaker(
     autocommit=False,
     future=True,
 )
+
+#Base.metadata.create_all(bind=engine) UNCOMMENT WHEN THE DATABASE WORKS
 
 def get_db():
     """
