@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from app.db.database import get_db
-from app.db.models import RawLog
+from app.models import RawLog
 
 router = APIRouter()
 

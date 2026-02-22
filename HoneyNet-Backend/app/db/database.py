@@ -1,13 +1,13 @@
-
 import os
 from dotenv import load_dotenv
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from app.db.models import RawLog, Base
+from app.db.base import Base
+from app.models import RawLog
 
-# Load environment variables from a .env file in the project root
+# Load environment variables from a .env file in the project root (if present)
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
