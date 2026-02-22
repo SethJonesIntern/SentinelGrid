@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install deps first (better caching)
+# Install deps first
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -16,5 +16,5 @@ COPY . .
 # Expose FastAPI port
 EXPOSE 8000
 
-# Start server (adjust module path if yours differs)
+# Start server
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

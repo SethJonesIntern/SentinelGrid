@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from app.db.base import Base
 from app.models import RawLog
 
-# Load environment variables from a .env file in the project root (if present)
+# Load environment variables from a .env file in the project root
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
