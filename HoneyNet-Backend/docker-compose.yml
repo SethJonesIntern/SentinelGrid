@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: honeynet-api
+
+    # Load all environment variables from .env
+    env_file:
+      - .env
+
+    ports:
+      - "8000:8000"
+
+    restart: always
