@@ -1,9 +1,11 @@
 # virtual environments (all depths)
 **/venv/
+**/.venv/
 **/.env/
 **/.env.*.local
 **/.env
 .env
+.vscode/
 
 # Python cache
 __pycache__/
