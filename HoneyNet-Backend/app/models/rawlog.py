@@ -1,9 +1,9 @@
-from sqlalchemy.orm import declarative_base
+
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
+from app.db.base import Base
 
-Base = declarative_base()
 
 class RawLog(Base):
     __tablename__ = "raw_logs"

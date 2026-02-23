@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from fastapi.encoders import jsonable_encoder
+
 
 from app.schemas.event import HoneypotEvent
-from app.db.models import RawLog
+from app.models import RawLog
 from app.db.database import get_db
+from app.services.normalize_event import normalize_event_dict
 
 router = APIRouter()
 
@@ -17,7 +20,7 @@ def log_event(
     """
 
     # Create ORM row from incoming event JSON
-    row = RawLog(raw_json=event.model_dump())
+    row = RawLog(raw_json=jsonable_encoder(normalize_event_dict(event)))
 
     # Stage insert
     db.add(row)
