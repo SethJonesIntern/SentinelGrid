@@ -20,7 +20,7 @@ def log_event(
     """
 
     # Create ORM row from incoming event JSON
-    row = RawLog(raw_json=jsonable_encoder(normalize_event(event)))
+    row = RawLog(raw_json=jsonable_encoder(normalize_event_dict(event)))
 
     # Stage insert
     db.add(row)
