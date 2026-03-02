@@ -1,0 +1,99 @@
+SentinelGrid Honeynet - Running Locally
+======================================
+
+1. Running the Cowrie Honeypot
+------------------------------
+(Note: This example uses Ubuntu via WSL. If you don’t have WSL or Ubuntu, install it first.)
+
+# Go to the Cowrie directory (replace with your local path)
+cd ~/Cowrie
+
+# Activate the Cowrie Python virtual environment
+source cowrie-env/bin/activate
+
+# Start Cowrie honeypot
+cowrie start
+
+---
+
+2. Accessing Cowrie Logs Locally
+--------------------------------
+Cowrie stores logs in two main files:
+
+# Standard log
+cd ~/cowrie/var/log/cowrie/cowrie.log
+
+# JSON-formatted log
+cd ~/cowrie/var/log/cowrie/cowrie.json
+
+For real-time logs to monitor activity:
+tail -f ~/cowrie/var/log/cowrie/cowrie.json
+
+Note: Cowrie runs inside WSL, so scripts or VS Code may need paths like:
+e.g., /mnt/c/Users/<your-username>/path/to/Cowrie/…
+
+---
+
+3. Starting the Local Backend & Database
+----------------------------------------
+# Navigate to the backend directory
+cd ~/path/to/SentinelGrid/HoneyNet-backend
+
+# Start Docker containers
+docker-compose up
+
+This starts:
+- FastAPI backend (honeypot-api)
+- PostgreSQL database (honeypot-db)
+
+**Make sure to run docker desktop application as well to have docker engine running**
+(I had to do this but if you find a way around it then all is well)
+
+---
+
+4. Sending Cowrie Logs to Backend
+---------------------------------
+# Navigate to the scripts directory inside backend
+cd /mnt/c/Users/<your-username>/path/to/HoneNet-backend/app/hp_scripts
+
+# Run the log sender script
+python send_cowrie_logs.py (python3 worked for me)
+
+Note: Currently manual; can be automated later.
+
+---
+
+5. Checking Logs in the Database
+--------------------------------
+# Exec into PostgreSQL container
+docker exec -it honeypot-db psql -U honeypot -d honeypot
+
+# Verify tables
+\d
+
+# Inspect the logs table
+\d raw_logs
+
+# Check recent logs
+SELECT id, created_at, raw_json
+FROM raw_logs
+ORDER BY created_at DESC
+LIMIT 5; (You can keep this or modify it its just so if we have like 100+ logs we dont need to check all of them)
+
+---
+
+6. Shutting Down Everything Safely
+---------------------------------
+docker-compose down
+docker ps  # Confirm honeypot-api and honeypot-db are not running
+
+cowrie stop
+cowrie status
+
+---
+
+7. Notes / Tips
+---------------
+- The send_cowrie_logs.py script will append logs to the DB. Running it multiple times may create duplicates.
+- Adjust paths in scripts to match your system.
+- Once cloud hosting is available, log sending can be automated.
