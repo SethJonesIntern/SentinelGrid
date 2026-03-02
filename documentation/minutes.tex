@@ -55,7 +55,8 @@ Sprint Retrospective is an internal scrum team meeting focused on improving the 
 \end{itemize}
 \section{Meeting Minutes}
 \subsection{2-16-2026}
-Everyone in the team attended the meeting. During this meeting, we assigned the tasks for sprint 1. In the span of the next two weeks, each role will have their own assigned tasks dedicated for their roles, but we will work towards the overall objective of having a basic skeleton or backbone (low implementation) of our project set up and aim to have it dockerized and able to run on everyone's computer. Went through the Jira and added all the tasks and assigned them. Everyone will be in charge of updating their progress of each task on Jira. Below are the tasks that were assigned to each role:
+\textbf{Attendance:} Everyone in the team attended the meeting. 
+\\During this meeting, we assigned the tasks for sprint 1. In the span of the next two weeks, each role will have their own assigned tasks dedicated for their roles, but we will work towards the overall objective of having a basic skeleton or backbone (low implementation) of our project set up and aim to have it dockerized and able to run on everyone's computer. Went through the Jira and added all the tasks and assigned them. Everyone will be in charge of updating their progress of each task on Jira. Below are the tasks that were assigned to each role:
 \begin{itemize}
     \item Cybersecurity/Honeypot Lead:
     \begin{itemize}
@@ -97,6 +98,20 @@ Everyone in the team attended the meeting. During this meeting, we assigned the 
         \item \textbf{Hard Deliverable:} Jupyter notebook that processes attack data.
     \end{itemize}
 \end{itemize}
+
+\subsection{2-23-2026}
+\textbf{Attendance:} Everyone was present during this meeting. 
+\\\textbf{Progress Update:}
+\\The team discussed individual progress on assigned roles and tasks. Overall, everyone has made significant progress and activelty working towards completion on the current sprint's tasks. We are all consistently updating the Github and Jira as tasks are completed.
+\\The backend is fully dockerized and we confirmed that it is running locally on everyone's machines/ The frontend is currently in progress and will be completed by the end of the week. 
+\\The team also reviewed requirements for the Design Proposal and Team Contract document that is due this weekend as well as what each of us needs to fill out. 
+\\\textbf{Scheduling Update:}
+There is a slight scheduling conflict of our meeting times since one of our members has a class during this time, so we agreed to moving our weekly meetings to Mondays at 1:30pm. 
+
+\subsection{3-2-2026}
+\textbf{Attendance:} Everyone was present during this meeting. 
+\\\textbf{Progress Update:} Everything for sprint 1 was completed. First honeypot was deployed on Cowrie and it can send logs to the backend. We will research further on how to automate this in the future. This current sprint's tasks will be sent after the instructor check ins this week. We will update the Jira with the new tasks and assign them to their correct roles. We will also need to work on the Early status report that is due this weekend and provide MVP, Jira updates, sprint plannings, and Agile event info. .
+
 \section{Sprint 0 : 2/1/2026 - 2/15/2026}
 \subsection{Goal}
 Our goal for Sprint 0 is to set the foundation of our project and to establish a clear semester plan.
@@ -185,12 +200,32 @@ During the 2/16/2026 meeting, all team members were present and Sprint 1 tasks w
 
 \subsection{Sprint Review}
 The team reviewed the following:
-
 \begin{itemize}
     \item What was completed during the sprint:
+    \begin{itemize}
+        \item Design proposal and team contract was completed 
+        \item Backend and data base set up and dockerized 
+        \item Front end scaffold completed
+        \item ML notebooks completed for data analysis and data preprocessing pipeline 
+        \item Docker for backend verified to run successfully across everyone's environments locally 
+        \item Deployed first honeypot on cowrie that can be compromised via ssh root login with no proper authentication
+    \end{itemize}
     \item What worked well:
+    \begin{itemize}
+        \item Separate github branches and roles allowed for parallel development across backend, frontend, database, and ml
+        \item Weekly meetings for updates
+        \item Regular communication and working through issues together on Discord
+        \item Jira task tracking for progress and accountability
+    \end{itemize}
     \item Feedback received:
+    \begin{itemize}
+        \item Clarity and good documentation needed for other members to know how to run certain parts and ensure reproducibility 
+    \end{itemize}
     \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \begin{itemize}
+        \item Built off of this sprint to add the next steps and tasks for the next sprint 
+        \item Idea of exploring more possibilities of supervised learning for classifications 
+    \end{itemize}
 \end{itemize}
 
 \subsection{Sprint Retrospective}
@@ -198,16 +233,34 @@ The team discussed:
 
 \begin{itemize}
     \item What went well during the sprint:
+    \begin{itemize}
+        \item Every member successfully worked on their roles and tasks while learning the technologies they will be using
+        \item We have established a project skeleton earlier than expected 
+        \item Communication remained consistent 
+    \end{itemize}
     \item What challenges or obstacles were encountered:
-    \item What could be improved in future sprints:
-    \item Action items to implement in the next sprint:
-\end{itemize}
+    \begin{itemize}
+        \item Some of us had to learn how to use docker for the first time 
+        \item Limited availability of realistic labeled attack data cause restriction in experimenting with supervised classification- will need to find another way 
+    \end{itemize}
 
+    \item What could be improved in future sprints:
+    \begin{itemize}
+        \item Aim to complete assignments the day before so we all can review the day of submissions
+        \item Improved documentation updates on Github for readmes for different parts of the project structure 
+    \end{itemize}
+    \item Action items to implement in the next sprint:
+    \begin{itemize}
+        \item Look into supervised learning for classification 
+        \item Look into how to connect all the different parts together into a functioning structure (connect back end to ml, to front end, to data, etc.)
+        \item Not specifically for next sprint but will need to look into automatic sending logs from honeypot to backend in the future
+    \end{itemize}
+\end{itemize}
 
 
 \section{Sprint 2 : 3/1/2026 - 3/15/2026}
 \subsection{Goal}
-...
+[Will be updated after new tasks/plan is sent]
 \subsection{Sprint Planning}
 [Description/Summary...]
 
