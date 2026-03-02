@@ -1,0 +1,43 @@
+Running the Cowrie honeypot locally (I used ubuntu via WSL so if you dont have WSL or ubuntu you will need to install it ):
+- cd ~/Cowrie
+- source cowrie-env/bin/activate
+- cowrie start
+
+Logs locally:
+- cd ~/cowrie/var/log/cowrie/cowrie.log
+- cd ~/cowrie/var/log/cowrie/cowrie.json
+
+For realtime logs to confirm status:
+- tail -f ~/cowrie/var/log/cowrie/cowrie.json
+
+Remeber cowrie for now runs locally in WSL, therfore
+in VS to run code we need to set path of cowrie log or 
+cowrie jsons to the seperate path in the WSL
+
+To start local db on your machine go to backend and run 
+-docker-compose up 
+
+To send logs:
+inside WSL inside of this file directory:
+- cd /mnt/c/Users/zacha/OneDrive/Desktop/Vs Proj/stuff/sentinelGrid/SentinelGrid/HoneyNet-backend/app/hp_scripts
+- run python send_cowrie_logs.py
+
+To check db recieved the logs:
+- docker-compose up
+
+Send logs or Check previous logs!
+
+Exec into Postgres container: 
+-docker exec -it honeypot-db psql -U honeypot -d honeypot
+- Verify tables: \d
+- check log: \d raw_logs
+
+Check DB logs finale: 
+SELECT id, created_at, raw_json
+FROM raw_logs
+ORDER BY created_at DESC
+LIMIT 5;
+
+To shutdown everything:
+- docker-compose down
+- docker ps (maker sure not honeypot-api or honeypot-db running)
