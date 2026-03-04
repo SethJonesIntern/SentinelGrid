@@ -200,18 +200,18 @@ List of features (not comprehensive)
 This week, I worked on the Jupyter Notebook for data loading and processing from the two datasets that we will be using for our test pipeline and training. I used one dataset to make a human baseline and another for attacker behavior and pattern learning. The only issue is that I haven't found a good dataset to help model human baseline, the one I'm using right now does not have password and command level info due to sensitive info. Since this is just a base structure to get a pipeline working, we could later down the line compute entropy from legitimate test logins but with no password storage to account for security issues or generate them. I was able to finish the analysis of the Network Intrusion Dataset for human baseline behavior. I took in and combined all the data into one large data frame then I pulled features from the data to use as features to help train and differentiate the human behavior. Then I plotted the distribution of session duration, packet count, and packets per minute. I then trained the human baseline model using Isolation Forest, assigned anomaly scores to all the session data and plotted the distribution on BENIGN and attack traffic:
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\linewidth]{base.png}
+    \includegraphics[width=0.5\linewidth]{imgs/base.png}
     \label{fig:placeholder}
 \end{figure}
 \noindent This graph shows that there are fewer BENIGN samples greater than around 0.6 score and the attack scores are shifted right with most scores between 0.55-0.72. This means that using the baseline anomaly model, it was able to assign lower scores to BENIGN traffic and higher scores to attacker traffic although there are some false positives and false negatives due to some overlap.
 I then conducted analysis on the Zenodo CyberLab Honeynet Dataset. I conducted similar processing of data, feature extraction, and distribution plotting. Since this dataset has different data and features compared to the Network Intrusion Dataset, I used KMeans unsupervised learning to optimize clustering for a new attacker behavior model.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\linewidth]{sil.png}
+    \includegraphics[width=0.5\linewidth]{imgs/sil.png}
     \label{fig:placeholder}
 \end{figure}\begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\linewidth]{cluster.png}
+    \includegraphics[width=0.5\linewidth]{imgs/cluster.png}
     \label{fig:placeholder}
 \end{figure}
 \noindent These graphs show that this dataset separates into well defined behavior groups. I then started a new Jupyter Notebook to write a skeleton pipeline for our project that we can adjust later on once we get our data from the honeypots where it expects Cowrie logs and converts them in session level feature tables that will be used for anomaly detection, attacker clustering, behavioral profiling, and supervised classification.
