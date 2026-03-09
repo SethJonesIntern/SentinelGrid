@@ -110,8 +110,11 @@ There is a slight scheduling conflict of our meeting times since one of our memb
 
 \subsection{3-2-2026}
 \textbf{Attendance:} Everyone was present during this meeting. 
-\\\textbf{Progress Update:} Everything for sprint 1 was completed. First honeypot was deployed on Cowrie and it can send logs to the backend. We will research further on how to automate this in the future. This current sprint's tasks will be sent after the instructor check ins this week. We will update the Jira with the new tasks and assign them to their correct roles. We will also need to work on the Early status report that is due this weekend and provide MVP, Jira updates, sprint plannings, and Agile event info. .
+\\\textbf{Progress Update:} Everything for sprint 1 was completed. First honeypot was deployed on Cowrie and it can send logs to the backend. We will research further on how to automate this in the future. This current sprint's tasks will be sent after the instructor check ins this week. We will update the Jira with the new tasks and assign them to their correct roles. We will also need to work on the Early status report that is due this weekend and provide MVP, Jira updates, sprint plannings, and Agile event info.
 
+\subsection{3-9-2026}
+\textbf{Attendance:} Everyone was present during this meeting. 
+\\\textbf{Progress Update:} In this meeting, we talked about the tasks for the next two sprints since they are connected. The main goal is to move Sentinel Grid to a real cloud honey net with a working dashboard and structured attack data. Zach sent out tasks for everyone for week 4 to 7 and we also updated the Jira board sprints and assigned tasks per role. Yama will start on the template for the Preliminary Design document so we can split up everyone's parts. We will work parallel to efficiently get tasks done. Next week is spring break, so we will just have a basic progress update on implementation and documentation. 
 \section{Sprint 0 : 2/1/2026 - 2/15/2026}
 \subsection{Goal}
 Our goal for Sprint 0 is to set the foundation of our project and to establish a clear semester plan.
@@ -260,18 +263,48 @@ The team discussed:
 
 \section{Sprint 2 : 3/1/2026 - 3/15/2026}
 \subsection{Goal}
-[Will be updated after new tasks/plan is sent]
+Establish the core cloud infrastructure for SentinelGrid so we can move beyond a local Docker only setup. By the end of Sprint 2, the team aims to have the backend prepared for cloud deployment, the database configured for real log storage, at least one honeypot connected to the backend log pipeline, and the frontend prepared for integration with live API data. 
+
+changed meeting times to mondays at 1:30
 \subsection{Sprint Planning}
-[Description/Summary...]
+Sprint 2 focuses on turning SentinelGrid from a local prototype into the first version of a cloud-connected cybersecurity monitoring platform. The priority is to deploy or prepare the backend and database in the cloud, confirm that honeypot logs can be accepted and stored through the API, and ensure the frontend can begin consuming real backend data. Since this is the first infrastructure sprint of the new phase, the emphasis is on reliability, connectivity, and end-to-end data flow rather than advanced analytics or polished UI features.
 
 \begin{itemize}
     \item What can we deliver by the end of this sprint? 
-   
+    \begin{itemize}
+        \item A cloud-hosted backend deployment or a fully prepared backend deployment environment on a VPS
+        \item A PostgreSQL database instance configured for SentinelGrid and connected
+        \item A verified log ingestion pipeline where honeypot events can be sent to the backend and stored in the database
+        \item At least one deployed honeypot node producing structured logs
+        \item Backend API endpoints tested for basic functionality such as log submission and session retrieval
+        \item A frontend/dashboard environment connected to backend APIs or prepared for deployment and live integration
+        \item Updated documentation for deployment, infrastructure setup, and ingestion workflow
+        \item Preprocessing data pipeline for ML and feature extraction 
+    \end{itemize}
+    
     \item How will we build it? 
-  
+      We will work and build each part of the structures in parallel on our own branches on Github. Those relying on other parts needing to be setup first will conduct research on what they need to do/start with a skeleton baseline 
+
     \item What must be done vs nice:
     \\\textbf{Must be done:}
-    \\\textbf{Nice to have:}
+     \begin{itemize}
+        \item Set up cloud infrastructure for backend deployment
+        \item Deploy or finalize deployment-ready FastAPI backend
+        \item Set up PostgreSQL database and confirm schema creation
+        \item Connect backend to database successfully
+        \item Insert incoming logs into database correctly
+        \item Deploy at least one 
+        \item Fix frontend integration with backend APIs
+        \item Document setup steps and team workflow
+        \item ML pipelines for data and features
+    \end{itemize}
+    \textbf{Nice to have:}
+     \begin{itemize}
+        \item Add automatic log forwarding scripts instead of manual testing
+        \item Add input validation and stronger API error handling
+        \item Start preprocessing modularization for ML pipeline integration
+        \item Prepare early visualizations for attack sessions if enough real logs are available
+    \end{itemize}
 
 \end{itemize}
 
@@ -297,19 +330,51 @@ The team discussed:
 
 \section{Sprint 3 : 3/15/2026 - 3/29/2026}
 \subsection{Goal}
-...
+Expand SentinelGrid from a cloud-connected prototype into a more complete live cybersecurity monitoring platform. By the end of Sprint 3, the team aims to stabilize the deployed infrastructure, support multiple honeypot nodes, improve structured log storage and analytics queries, complete the main dashboard views, and prepare the ML pipeline for anomaly detection, clustering, and backend integration.
 
 \subsection{Sprint Planning}
-[Description/Summary...]
+Sprint 3 focuses on system completion, analytics, and stability. After establishing the cloud deployment and initial log-ingestion pipeline in Sprint 2, this sprint will extend SentinelGrid into a more functional honeynet platform with multiple honeypots, improved database performance, new backend analytics endpoints, and a more complete React dashboard. In parallel, the ML/data pipeline will move from preprocessing and baseline feature extraction toward clustering and anomaly scoring so that attack sessions can later be surfaced as higher-level patterns rather than raw logs alone. ML will also explore the possibility of labeling data for supervised classification 
 
 \begin{itemize}
     \item What can we deliver by the end of this sprint? 
-   
+    \begin{itemize}
+        \item Two deployed honeypot nodes, including one SSH honeypot and one HTTP honeypot
+        \item Automatic log forwarding from honeypots into the backend API
+        \item A stable PostgreSQL database storing structured live attack data
+        \item Improved database schema and indexes for faster log queries
+        \item Analytics endpoints for top attacker IPs, attack rates, commands, and session summaries
+        \item A working React dashboard with pages such as Live Attack Feed, Session Explorer, and Attack Analytics
+        \item Visualizations for attack frequency, common commands, and top sources of activity
+        \item Initial clustering and anomaly detection outputs from honeypot sessions and external datasets
+        \item Documentation for infrastructure, API usage, database maintenance, and ML integration
+    \end{itemize}
     \item How will we build it? 
-  
+     We will continue to work in parallel on our own branches on Github. Those relying on other parts needing to be setup first will conduct research on what they need to do/start with a skeleton baseline 
+
     \item What must be done vs nice:
     \\\textbf{Must be done:}
-    \\\textbf{Nice to have:}
+    \begin{itemize}
+        \item Deploy and maintain both honeypots 
+        \item Ensure automatic log forwarding works 
+        \item Improve raw log schema and add indexes on important fields such as timestamp, IP, and session ID
+        \item Implement backend analytics endpoints
+        \item Complete core dashboard pages for live logs, sessions, and analytics
+        \item Add charts for attack trends and attacker activity
+        \item Run clustering or anomaly detection pipeline on collected session data
+        \item Define backend ready output format for anomaly or behavior analysis results
+    \end{itemize}
+    \textbf{Nice to have:}
+    \begin{itemize}
+        \item Add automatic database backups and export scripts
+        \item Create fake attacker interactions such as fake admin logins or fake filesystem responses
+        \item Add auto refresh and improved filtering in the dashboard
+        \item Add richer session drill-down features in the UI
+        \item Tune anomaly scoring for near real time detection
+        \item Integrate early anomaly scores directly into dashboard views
+        \item Improve UI responsiveness and polish for demo readiness
+        \item Possible labeling subset for ML supervised classification
+    \end{itemize}
+    
 
 \end{itemize}
 
