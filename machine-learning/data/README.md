@@ -1,5 +1,5 @@
 # Data
-This directory contains instructions for obtaining all datasets used in the machine learning and threat analysis pipeline for Sentinel Grid
+This directory contains instructions for obtaining all datasets used in the machine learning and threat analysis pipeline for Sentinel Grid as well as outputs from the pipelines and analyzation.
 
 ⚠️ Datasets are not stored in this repository due to large file size.
 Please download them manually and place them in the correct folders as described below.
