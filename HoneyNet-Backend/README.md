@@ -19,21 +19,21 @@
 
 
     #ON FIRST BUILD:
-        docker compose up --build
+        docker compose -f docker-compose.yml -f docker-compose.frontend.yml up --build
 
 
     #AFTER FIRST BUILD:
         #RUN FOREGROUD:
-        docker compose up
+        docker compose -f docker-compose.yml -f docker-compose.frontend.yml up
         #RUN BACKGROUND:
-        docker compose up -d
+        docker compose -f docker-compose.yml -f docker-compose.frontend.yml up -d
         
         #STOP
-        docker compose down 
+        docker compose -f docker-compose.yml -f docker-compose.frontend.yml down 
 
 
     #Rebuild
-        docker compose up --build --force-recreate
+        docker compose -f docker-compose.yml -f docker-compose.frontend.yml up --build --force-recreate
 
 
 
