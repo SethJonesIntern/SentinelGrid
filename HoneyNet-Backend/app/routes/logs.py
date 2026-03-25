@@ -7,7 +7,7 @@ from app.models import RawLog
 
 router = APIRouter()
 
-@router.get("/sessions")
+@router.get("/logs")
 def get_sessions(db: Session = Depends(get_db), limit: int = 200):
     rows = (
         db.query(RawLog)
