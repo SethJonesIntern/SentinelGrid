@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from app.db.database import engine
-from app.db.base import Base
 from app.routes.health import router as health_router
 from app.routes.log import router as log_router
 from app.routes.logs import router as sessions_router
@@ -15,10 +13,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
-
 app.include_router(health_router)
 app.include_router(log_router)
 app.include_router(sessions_router)
