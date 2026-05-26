@@ -19,10 +19,20 @@ def load_all_data(data_dir: str) -> pd.DataFrame:
     dfs= []
     cowrie_path = data_dir / "cowrie_features.csv"
     dfs.append(load_cowrie(cowrie_path))
-    
+
     #if there are  another honeypot CSV
     #other_path = data_dir / "other_honeypot.csv"
     #dfs.append(load_other_honeypot(other_path, "other_honeypot"))
+
+    #check if csv exists first
+    if cowrie_path.exists():
+        dfs.append(load_cowrie(cowrie_path))
+    else:
+        print(f"{cowrie_path} path not found")
+
+    if not dfs: 
+        raise ValueError("No honeypot datasets loaded")
+    
     combined_df= pd.concat(dfs, ignore_index=True)
     return combined_df
 if __name__ == "__main__":
