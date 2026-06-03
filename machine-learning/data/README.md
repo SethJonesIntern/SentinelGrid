@@ -38,16 +38,8 @@ Download from the link above and add in the `machine-learning-> data -> Zenodo H
 
 
 ## Cowrie Logs
-The `cowrielogs` folder will contain the JSON files from the collected data from our honeypots and the `outputs` folder will contain:
-- `cowrie_events.csv`
-- `cowrie_features.csv`
-- `cowrie_sessions.csv`
-- `clustered_sessions.csv`
-- `anomaly_scores.csv`
-- `behavior_summary.json` 
+The `cowrielogs` folder will contain the JSON files from the collected data from our honeypots and the `outputs` folder will be stored in `data\processed`. 
 
-files created from the honeypot data processing, feature extraction, anomaly clustering, and behavior analysis.
+I was able to test the pipeline in `01_honeypot_pipeline.ipynb` and `02_behavior_model.ipynb` and produce test outputs. 
 
-In order to test our pipeline before the collection of our honeypot data, I used 107 synthetic data logs in `cowrieTEST.json` which contains a couple sample logs from Cowrie plus ChatGPT generated example data. Using this data, I was able to test the pipeline in `01_honeypot_pipeline.ipynb` and `02_behavior_model.ipynb` and produce the outputs in `TESToutputs` folder. 
-
-Once we collect enough logs to have a full dataset, I will be able to re-test the pipeline to make sure all the cases are covered.
+Once we collect enough logs to have a full dataset, I will be able to re-test the pipeline to make sure all the cases are covered and transfer to python scripts.
