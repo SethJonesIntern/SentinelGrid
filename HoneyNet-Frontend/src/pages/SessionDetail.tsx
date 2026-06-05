@@ -5,8 +5,8 @@ import type { RawLogRow } from "../lib/api";
 import { timeAgo } from "../lib/telemetry";
 
 export default function SessionDetailPage() {
-  const { sessionId } = useParams();
-  const decoded = sessionId ? decodeURIComponent(sessionId) : "";
+  const { id } = useParams();
+  const decoded = id ? decodeURIComponent(id) : "";
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ export default function SessionDetailPage() {
     (async () => {
       try {
         setErr("");
-        const res = await api.logs(1500);
+        const res = await api.logs(5000);
         setLogs(res.logs.filter((l) => l.raw_json.session_id === decoded));
       } catch (e) {
         setErr((e as Error).message);

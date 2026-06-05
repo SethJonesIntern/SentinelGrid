@@ -7,12 +7,13 @@ export default function LiveFeedPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState(200);
-  const [pollMs, setPollMs] = useState(5000);
+  const [limit, setLimit] = useState(100);
+  const [pollMs, setPollMs] = useState(10000);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [ipFilter, setIpFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sidFilter, setSidFilter] = useState("");
+  const [page, setPage] = useState(0);
 
   async function load() {
     try {
@@ -27,12 +28,17 @@ export default function LiveFeedPage() {
   }
 
   useEffect(() => { void load(); }, [limit]);
+  useEffect(() => { setPage(0); }, [ipFilter, typeFilter, sidFilter, limit]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = window.setInterval(() => void load(), pollMs);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, pollMs);
     return () => window.clearInterval(id);
   }, [autoRefresh, pollMs, limit]);
+
+  const PAGE_SIZE = 50;
 
   const filtered = useMemo(() => logs.filter((l) => {
     const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
@@ -40,6 +46,9 @@ export default function LiveFeedPage() {
     const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
     return okIp && okType && okSid;
   }), [logs, ipFilter, typeFilter, sidFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageFiltered = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const statusColor = loading ? "#fbbf24" : err ? "#f87171" : autoRefresh ? "#34d399" : "#6b7a99";
   const statusText = loading ? "Loading..." : err ? "Error" : autoRefresh ? "Live" : "Paused";
@@ -111,7 +120,7 @@ export default function LiveFeedPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((l) => (
+              {pageFiltered.map((l) => (
                 <tr key={l.id}>
                   <td>
                     <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.raw_json.timestamp)}</div>
@@ -143,6 +152,13 @@ export default function LiveFeedPage() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 16 }}>
+            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} style={{ ...btn, opacity: page === 0 ? 0.4 : 1 }}>← Prev</button>
+            <span style={subtle}>Page {page + 1} of {totalPages}</span>
+            <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ ...btn, opacity: page >= totalPages - 1 ? 0.4 : 1 }}>Next →</button>
+          </div>
+        )}
       </div>
     </div>
   );

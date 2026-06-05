@@ -8,7 +8,8 @@ export default function SessionsPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState(400);
+  const [limit, setLimit] = useState(200);
+  const [page, setPage] = useState(0);
   const [ipFilter, setIpFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sidFilter, setSidFilter] = useState("");
@@ -26,6 +27,9 @@ export default function SessionsPage() {
   }
 
   useEffect(() => { void load(); }, [limit]);
+  useEffect(() => { setPage(0); }, [ipFilter, typeFilter, sidFilter, limit]);
+
+  const PAGE_SIZE = 50;
 
   const sessions = useMemo(() => {
     return groupBySession(logs).filter((s) => {
@@ -35,6 +39,9 @@ export default function SessionsPage() {
       return okIp && okSid && okType;
     });
   }, [logs, ipFilter, sidFilter, typeFilter]);
+
+  const totalPages = Math.ceil(sessions.length / PAGE_SIZE);
+  const pageSessions = sessions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -57,7 +64,7 @@ export default function SessionsPage() {
           <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
           <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
           <input
-            type="number" min={50} max={5000} value={limit}
+            type="number" min={50} max={1000} value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}
             style={{ ...inputStyle, width: 90 }}
           />
@@ -94,7 +101,7 @@ export default function SessionsPage() {
               </tr>
             </thead>
             <tbody>
-              {sessions.map((s) => (
+              {pageSessions.map((s) => (
                 <tr key={s.session_id}>
                   <td>
                     <Link
@@ -153,6 +160,13 @@ export default function SessionsPage() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 16 }}>
+            <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} style={{ ...btn, opacity: page === 0 ? 0.4 : 1 }}>← Prev</button>
+            <span style={subtle}>Page {page + 1} of {totalPages}</span>
+            <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ ...btn, opacity: page >= totalPages - 1 ? 0.4 : 1 }}>Next →</button>
+          </div>
+        )}
       </div>
     </div>
   );

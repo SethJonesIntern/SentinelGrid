@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [pollMs, setPollMs] = useState(5000);
+  const [pollMs, setPollMs] = useState(15000);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   async function load() {
@@ -34,7 +34,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = window.setInterval(() => void load(), pollMs);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, pollMs);
     return () => window.clearInterval(id);
   }, [autoRefresh, pollMs]);
 
