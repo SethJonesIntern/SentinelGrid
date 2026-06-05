@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
-import { formatTimestamp, groupBySession } from "../lib/telemetry";
+import { formatTimestamp, getCommandText, timeAgo } from "../lib/telemetry";
 
-export default function SessionsPage() {
+export default function LiveFeedPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState(200);
-  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(100);
+  const [pollMs, setPollMs] = useState(10000);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [ipFilter, setIpFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sidFilter, setSidFilter] = useState("");
+  const [page, setPage] = useState(0);
 
   async function load() {
     try {
@@ -29,19 +30,28 @@ export default function SessionsPage() {
   useEffect(() => { void load(); }, [limit]);
   useEffect(() => { setPage(0); }, [ipFilter, typeFilter, sidFilter, limit]);
 
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, pollMs);
+    return () => window.clearInterval(id);
+  }, [autoRefresh, pollMs, limit]);
+
   const PAGE_SIZE = 50;
 
-  const sessions = useMemo(() => {
-    return groupBySession(logs).filter((s) => {
-      const okIp = ipFilter ? s.src_ip.includes(ipFilter.trim()) : true;
-      const okSid = sidFilter ? s.session_id.includes(sidFilter.trim()) : true;
-      const okType = typeFilter ? s.event_types.some((t) => t.includes(typeFilter.trim())) : true;
-      return okIp && okSid && okType;
-    });
-  }, [logs, ipFilter, sidFilter, typeFilter]);
+  const filtered = useMemo(() => logs.filter((l) => {
+    const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
+    const okType = typeFilter ? l.raw_json.event_type.includes(typeFilter.trim()) : true;
+    const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
+    return okIp && okType && okSid;
+  }), [logs, ipFilter, typeFilter, sidFilter]);
 
-  const totalPages = Math.ceil(sessions.length / PAGE_SIZE);
-  const pageSessions = sessions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageFiltered = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const statusColor = loading ? "#fbbf24" : err ? "#f87171" : autoRefresh ? "#34d399" : "#6b7a99";
+  const statusText = loading ? "Loading..." : err ? "Error" : autoRefresh ? "Live" : "Paused";
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -50,15 +60,16 @@ export default function SessionsPage() {
       <div style={panel}>
         <div style={topRow}>
           <div>
-            <div style={pageTitle}>Session Explorer</div>
-            <div style={subtle}>Investigate grouped activity by session_id.</div>
+            <div style={pageTitle}>Live Attack Feed</div>
+            <div style={subtle}>Streaming latest events from the telemetry backend.</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: loading ? "#fbbf24" : err ? "#f87171" : "#34d399", display: "inline-block" }} />
-            <span style={subtle}>{loading ? "Loading..." : err ? "Error" : `${sessions.length} sessions`}</span>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusColor, display: "inline-block", boxShadow: `0 0 8px ${statusColor}` }} />
+            <span style={subtle}>{statusText}</span>
           </div>
         </div>
 
+        {/* Filters */}
         <div style={filtersRow}>
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
           <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
@@ -68,91 +79,72 @@ export default function SessionsPage() {
             onChange={(e) => setLimit(Number(e.target.value))}
             style={{ ...inputStyle, width: 90 }}
           />
+          <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={inputStyle}>
+            <option value={5000}>5s</option>
+            <option value={10000}>10s</option>
+            <option value={30000}>30s</option>
+            <option value={60000}>60s</option>
+          </select>
+          <button onClick={() => setAutoRefresh((v) => !v)} style={autoRefresh ? btnDanger : btn}>
+            {autoRefresh ? "Pause" : "Resume"}
+          </button>
           <button onClick={() => void load()} style={btn}>Refresh</button>
         </div>
 
         {err && <div style={{ ...subtle, color: "#f87171", marginTop: 10 }}>{err}</div>}
       </div>
 
-      {/* Stats */}
+      {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <MiniStat label="Total Sessions" value={String(sessions.length)} accent="#3b82f6" />
-        <MiniStat label="Events Loaded" value={String(logs.length)} accent="#22d3ee" />
+        <MiniStat label="Total Fetched" value={String(logs.length)} accent="#3b82f6" />
+        <MiniStat label="Filtered Events" value={String(filtered.length)} accent="#22d3ee" />
         <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip)).size)} accent="#f87171" />
-        <MiniStat label="Fetch Limit" value={String(limit)} accent="#fbbf24" />
+        <MiniStat label="Poll Interval" value={autoRefresh ? `${pollMs / 1000}s` : "Paused"} accent="#34d399" />
       </div>
 
       {/* Table */}
       <div style={panel}>
         <div style={{ ...sectionLabel, marginBottom: 16 }}>
-          Sessions — <span style={{ color: "#3b82f6" }}>{sessions.length}</span> grouped
+          Event Stream — <span style={{ color: "#3b82f6" }}>{filtered.length}</span> events
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
               <tr>
-                <th>Session ID</th>
+                <th>Timestamp</th>
                 <th>src_ip</th>
-                <th>Events</th>
-                <th>Event Types</th>
-                <th>Commands</th>
-                <th>First Seen</th>
-                <th>Last Seen</th>
+                <th>Event Type</th>
+                <th>Session ID</th>
+                <th>Command</th>
+                <th>Payload</th>
               </tr>
             </thead>
             <tbody>
-              {pageSessions.map((s) => (
-                <tr key={s.session_id}>
+              {pageFiltered.map((l) => (
+                <tr key={l.id}>
                   <td>
-                    <Link
-                      to={`/sessions/${encodeURIComponent(s.session_id)}`}
-                      style={{ color: "#60a5fa", textDecoration: "none" }}
-                    >
-                      <span style={pill}>{s.session_id.slice(0, 12)}…</span>
-                    </Link>
-                    <div style={{ fontSize: 10, color: "#3d4f6e", marginTop: 5, wordBreak: "break-all", fontFamily: "'Space Mono', monospace" }}>
-                      {s.session_id}
-                    </div>
+                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.raw_json.timestamp)}</div>
+                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.raw_json.timestamp)}</div>
                   </td>
-                  <td><span style={pill}>{s.src_ip}</span></td>
-                  <td>
-                    <span style={{ fontSize: 18, fontWeight: 900, color: "#93c5fd" }}>{s.count}</span>
+                  <td><span style={pill}>{l.raw_json.src_ip}</span></td>
+                  <td><span style={{ ...pill, color: "#93c5fd", borderColor: "rgba(99,165,255,0.3)" }}>{l.raw_json.event_type}</span></td>
+                  <td style={{ maxWidth: 200, wordBreak: "break-all" }}>
+                    <span style={{ fontSize: 11, fontFamily: "'Space Mono', monospace", color: "#6b7a99" }}>
+                      {l.raw_json.session_id}
+                    </span>
                   </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                      {s.event_types.slice(0, 4).map((t) => (
-                        <span key={t} style={{ ...pill, color: "#93c5fd", borderColor: "rgba(99,165,255,0.25)" }}>{t}</span>
-                      ))}
-                      {s.event_types.length > 4 && (
-                        <span style={{ ...pill, color: "#4b5f7c" }}>+{s.event_types.length - 4}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    {s.commands.length === 0 ? (
-                      <span style={{ color: "#2a3a52", fontSize: 12 }}>—</span>
-                    ) : (
-                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                        {s.commands.slice(0, 3).map((cmd) => (
-                          <span key={cmd} style={{ ...pill, color: "#34d399", borderColor: "rgba(52,211,153,0.25)" }}>{cmd}</span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(s.oldest_ts)}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(s.newest_ts)}</div>
+                  <td style={{ fontSize: 12, color: "#a8b5cc" }}>{getCommandText(l)}</td>
+                  <td style={{ maxWidth: 300 }}>
+                    <pre style={preStyle}>{JSON.stringify(l.raw_json.payload ?? {}, null, 2)}</pre>
                   </td>
                 </tr>
               ))}
-              {!loading && sessions.length === 0 && (
+              {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <div style={{ ...subtle, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "#2a3a52" }}>◉</span>
-                      No sessions match your filters.
+                      No matching events found.
                     </div>
                   </td>
                 </tr>
@@ -195,6 +187,7 @@ const panel: React.CSSProperties = {
 const pageTitle: React.CSSProperties = { fontSize: 22, fontWeight: 900, letterSpacing: "0.02em", color: "#e2e8f4" };
 const sectionLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4b5f7c" };
 const subtle: React.CSSProperties = { color: "#6b7a99", fontSize: 12 };
+
 const topRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" };
 const filtersRow: React.CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16, alignItems: "center" };
 
@@ -222,6 +215,13 @@ const btn: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+const btnDanger: React.CSSProperties = {
+  ...btn,
+  border: "1px solid rgba(248,113,113,0.3)",
+  background: "rgba(248,113,113,0.1)",
+  color: "#f87171",
+};
+
 const pill: React.CSSProperties = {
   display: "inline-block",
   padding: "3px 10px",
@@ -229,6 +229,14 @@ const pill: React.CSSProperties = {
   border: "1px solid rgba(255,255,255,0.08)",
   background: "rgba(255,255,255,0.04)",
   color: "#c8d3e8",
+  fontSize: 11,
+  fontFamily: "'Space Mono', monospace",
+};
+
+const preStyle: React.CSSProperties = {
+  margin: 0,
+  whiteSpace: "pre-wrap",
+  color: "#6b7a99",
   fontSize: 11,
   fontFamily: "'Space Mono', monospace",
 };

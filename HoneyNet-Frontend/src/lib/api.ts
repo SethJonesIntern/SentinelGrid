@@ -47,6 +47,6 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   
-  sessions: (limit = 200) =>
-    http<SessionsResponse>(`/sessions?limit=${encodeURIComponent(limit)}`)
+  logs: (limit = 200) =>
+    http<SessionsResponse>(`/logs?limit=${encodeURIComponent(limit)}`)
 };
