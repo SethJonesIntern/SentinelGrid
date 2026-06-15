@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 from pathlib import Path
-
+from sklearn.ensemble import IsolationForest
+import json
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
@@ -14,6 +15,32 @@ from sklearn.decomposition import PCA
 sns.set_style("whitegrid")
 plt.rcParams["figure.figsize"] = (8, 5)
 
+#isolation forest for anomly detection 
+def run_isolation_forest(df, X_scaled):
+    iso_forest = IsolationForest(
+        n_estimators=100,
+        contamination=0.01,
+        random_state=42
+    )
+
+    predictions= iso_forest.fit_predict(X_scaled)
+
+    #higher= more normal
+    anomaly_scores= iso_forest.decision_function(X_scaled)
+    df["is_anomaly"]= predictions == -1
+    df["anomaly_score"]= anomaly_scores
+    anomaly_count= df["is_anomaly"].sum()
+    print("anomaly percentage")
+    print(
+        df["is_anomaly"]
+        .value_counts(normalize=True) * 100
+    )
+
+    print(f"Detected {anomaly_count} anomalies ({anomaly_count/len(df)*100:.2f}%)")
+    return df, iso_forest
+
+
+#kmeans for behavioral clustering
 def run_kmeans_model(input_csv_path: str, output_dir: str):
     input_path= Path(input_csv_path)
     dataset_name= input_path.stem.replace("_ml_features", "")
@@ -64,6 +91,60 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
     df["pca1"]= X_pca[:, 0]
     df["pca2"]= X_pca[:, 1]
 
+    #isolation forest
+    df, iso_model= run_isolation_forest(df, X_scaled)
+
+    #top contributing features for anomalies
+    scaled_df = pd.DataFrame(
+        X_scaled,
+        columns=numeric_cols
+    )
+
+    feature_means= X_raw.mean()
+
+    anomaly_explanations= []
+
+    for idx in df[df["is_anomaly"]].index:
+        feature_scores= (
+            scaled_df.iloc[idx]
+            .abs()
+            .sort_values(ascending=False)
+            .head(3)
+        )
+
+        reasons= []
+        for feature in feature_scores.index:
+            z_score= scaled_df.loc[idx, feature]
+            reasons.append({
+                "feature": feature,
+                "direction": (
+                    "high"
+                    if z_score > 0
+                    else "low"
+                ),
+                "z_score": round(abs(z_score), 2),
+                "value": round(
+                    float(X_raw.loc[idx, feature]),
+                    2
+                ),
+                "average": round(
+                    float(feature_means[feature]),
+                    2
+                )
+            })
+
+        anomaly_explanations.append({
+            "row_index": int(idx),
+            "anomaly_score": round(
+                float(df.loc[idx, "anomaly_score"]),
+                4
+            ),
+            "attack_cluster": int(
+                df.loc[idx, "attack_cluster"]
+            ),
+            "reasons": reasons
+        })
+        
     #outputs
     out_path= Path(output_dir)
     csv_dir= out_path/"csv"
@@ -71,31 +152,92 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
     csv_dir.mkdir(parents=True, exist_ok=True)
     plot_dir.mkdir(parents=True, exist_ok=True)
     
-    plt.figure()
-    plt.plot(list(k_range), sil_scores, marker= "o", color='b')
-    plt.xlabel("Number of Clusters (k)")
-    plt.ylabel("Silhouette Score")
-    plt.title(f"Silhouette Score vs K: {dataset_name}")
-    plt.savefig(plot_dir/ f"{dataset_name}_silhouette_scores.png", bbox_inches= 'tight')
-    plt.close()
-
+    
+    #kmeans clusters
     plt.figure(figsize= (8, 6))
     sns.scatterplot(data=df, x="pca1", y="pca2", hue="attack_cluster", palette="tab10", s=15, alpha=0.8)
     plt.title(f"Attacker Behavior Clusters (PCA): {dataset_name}")
     plt.legend(title="Cluster", bbox_to_anchor=(1.05, 1), loc= 'upper left')
     plt.savefig(plot_dir/ f"{dataset_name}_kmeans_pca.png", bbox_inches='tight')
     plt.close()
-
-    output_csv = csv_dir/f"{dataset_name}_kmeans_clusters.csv"
-    df.to_csv(output_csv, index=False)
     
+    #pca anomaly plot
+    plt.figure(figsize=(8, 6))
+    sns.scatterplot(
+        data=df[~df["is_anomaly"]],
+        x="pca1",
+        y="pca2",
+        color="blue",
+        s=15,
+        alpha=0.5,
+        label="Normal"
+    )
+    sns.scatterplot(
+        data=df[df["is_anomaly"]],
+        x="pca1",
+        y="pca2",
+        color="red",
+        s=40,
+        label="Anomaly"
+    )
+    plt.title(f"Isolation Forest Anomalies (PCA): {dataset_name}")
+    plt.savefig(
+        plot_dir/ f"{dataset_name}_isolation_forest_pca.png",
+        bbox_inches="tight"
+    )
+    plt.close()
+
+    #anomaly score histogram 
+    plt.figure(figsize=(8, 5))
+    sns.histplot(
+        data=df,
+        x="anomaly_score",
+        bins=40,
+        kde=True
+    )
+    plt.title(f"Anomaly Score Distribution: {dataset_name}")
+    plt.savefig(
+        plot_dir/f"{dataset_name}_anomaly_scores.png",
+        bbox_inches="tight"
+    )
+    plt.close()
+
+    output_csv= csv_dir/f"{dataset_name}_modeled.csv"
+    df.to_csv(output_csv, index=False)
+
+    anomaly_csv= csv_dir / f"{dataset_name}_anomalies.csv"
+    df[df["is_anomaly"]].to_csv(
+        anomaly_csv,
+        index=False
+    )
+    #detailed anomaly explanations
+    json_path = (
+        csv_dir /
+        f"{dataset_name}_anomaly_explanations.json"
+    )
+
+    with open(json_path, "w") as f:
+        json.dump(
+            anomaly_explanations,
+            f,
+            indent=4
+        )
+    
+
+    #summaries
     print("\nCluster counts:")
     print(df["attack_cluster"].value_counts().sort_index().to_string())
-    print(f"\nSaved modeled dataset and plots to {out_path}/")
+    print("\nCluster vs Anomaly Summary:")
+    print(
+        pd.crosstab(
+            df["attack_cluster"],
+            df["is_anomaly"]
+        )
+    )
 
 if __name__ == "__main__":
     INPUT_DIR= Path("../data/features/csv/") 
-    OUTPUT_DIR= Path("../data/models/")
+    OUTPUT_DIR= Path("../data/outputs/")
     if not INPUT_DIR.exists():
         print(f"Error: Directory '{INPUT_DIR}' does not exist")
     else:
