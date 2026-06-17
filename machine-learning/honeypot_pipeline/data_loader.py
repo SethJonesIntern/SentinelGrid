@@ -1,9 +1,49 @@
+
 #loads honeypot dataset and adds source column if there are multiple sourses
 # useful when we have two or more honeypots 
 
 import pandas as pd 
 from pathlib import Path 
 import json
+import requests
+
+
+#loads logs from the backend 
+def load_backend_logs(api_url="http://localhost:8000/sessions?limit=5000") -> pd.DataFrame:
+    response = requests.get(api_url)
+    response.raise_for_status()
+    data= response.json()
+
+    print("\n" + "=" * 60)
+    print("BACKEND DATA")
+    print("=" * 60)
+    print(f"Raw logs returned by API: {data['count']}")
+
+    records= []
+
+    for row in data["logs"]:
+        event= row["raw_json"]
+        payload= event.get("payload", {})
+
+        record= {
+            "timestamp": event.get("timestamp"),
+            "src_ip": event.get("src_ip"),
+            "session_id": event.get("session_id"),
+            "sensor": event.get("sensor_id"),
+            "eventid": event.get("event_type"),
+        }
+
+        record.update(payload)
+        record["session_id"] = event.get("session_id")
+        record["eventid"] = event.get("event_type")
+        record["src_ip"] = event.get("src_ip")
+        records.append(record)
+
+    df= pd.DataFrame(records)
+    df["source"] = "backend"
+ 
+    return df
+
 
 #load cowrie JSON honeypot logs into dataframe
 def load_cowrie_json(path:str)-> pd.DataFrame:
@@ -91,18 +131,35 @@ def load_all_data(data_dir: str) -> dict:
 
 
 if __name__ == "__main__":
-    INPUT_DIR = "../data/Zenodo Honeypot Data/"
+    #log reading from backend 
     OUTPUT_DIR = "../data/processed/"
-    datasets = load_all_data(INPUT_DIR)
+    df= load_backend_logs()
 
-    for dataset_name, df in datasets.items():
-        print(f"\nLoaded dataset: {dataset_name}")
-        print(f"Rows: {len(df)}")
+    print("\nLoaded backend logs")
+    print(f"Rows: {len(df)}")
 
-        print("\nColumns:")
-        print(df.columns.tolist())
-        print("\nFirst 5 rows:")
-        print(df.head())
+    print("\nColumns:")
+    print(df.columns.tolist())
+
+    print("\nFirst 5 rows:")
+    print(df.head())
+
+    save_outputs(df,OUTPUT_DIR,"backend_logs")
+
+
+    # test pipeline
+    #INPUT_DIR = "../data/Zenodo Honeypot Data/"
+    #OUTPUT_DIR = "../data/processed/"
+    #datasets = load_all_data(INPUT_DIR)
+
+    #for dataset_name, df in datasets.items():
+    #    print(f"\nLoaded dataset: {dataset_name}")
+    #    print(f"Rows: {len(df)}")
+    #
+    #    print("\nColumns:")
+    #    print(df.columns.tolist())
+    #    print("\nFirst 5 rows:")
+    #    print(df.head())
 
         # save outputs
-        save_outputs(df,OUTPUT_DIR,dataset_name)
+    #    save_outputs(df,OUTPUT_DIR,dataset_name)
