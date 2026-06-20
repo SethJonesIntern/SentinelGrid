@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1280" height="720" fill="#0c0c0f"/>
+
+  <!-- ============================ CARD 1 : POST /log ============================ -->
+  <g>
+    <rect x="40" y="150" width="360" height="470" rx="14" fill="#121218" stroke="#2a2a33" stroke-width="1.5"/>
+    <!-- method badge -->
+    <rect x="64" y="172" width="64" height="28" rx="7" fill="#14532d"/>
+    <text x="96" y="192" fill="#4ade80" font-size="16" font-weight="700" text-anchor="middle" font-family="Consolas, monospace">POST</text>
+    <text x="140" y="193" fill="#ffffff" font-size="22" font-weight="600" font-family="Consolas, monospace">/log</text>
+    <text x="64" y="226" fill="#9a9aa4" font-size="14">Ingest a honeypot event</text>
+
+    <!-- request -->
+    <text x="64" y="256" fill="#6b7280" font-size="12" font-weight="700" letter-spacing="1">REQUEST</text>
+    <rect x="64" y="266" width="312" height="158" rx="8" fill="#0a0a0e" stroke="#23232c" stroke-width="1"/>
+    <g font-family="Consolas, monospace" font-size="13">
+      <text x="78" y="290" fill="#c4c9d2">{</text>
+      <text x="92" y="311"><tspan fill="#6fb2f0">"timestamp"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"2026-06-10T14:32Z"</tspan><tspan fill="#8a8a93">,</tspan></text>
+      <text x="92" y="332"><tspan fill="#6fb2f0">"source_ip"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"185.220.101.4"</tspan><tspan fill="#8a8a93">,</tspan></text>
+      <text x="92" y="353"><tspan fill="#6fb2f0">"event_type"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"ssh_login"</tspan><tspan fill="#8a8a93">,</tspan></text>
+      <text x="92" y="374"><tspan fill="#6fb2f0">"data"</tspan><tspan fill="#8a8a93">: { </tspan><tspan fill="#6fb2f0">"username"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"root"</tspan><tspan fill="#8a8a93"> }</tspan></text>
+      <text x="78" y="395" fill="#c4c9d2">}</text>
+    </g>
+
+    <!-- response -->
+    <text x="64" y="452" fill="#6b7280" font-size="12" font-weight="700" letter-spacing="1">RESPONSE  <tspan fill="#4ade80">200</tspan></text>
+    <rect x="64" y="462" width="312" height="44" rx="8" fill="#0a0a0e" stroke="#23232c" stroke-width="1"/>
+    <text x="78" y="490" font-family="Consolas, monospace" font-size="13"><tspan fill="#8a8a93">{ </tspan><tspan fill="#6fb2f0">"status"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"accepted"</tspan><tspan fill="#8a8a93">, </tspan><tspan fill="#6fb2f0">"id"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#b48ef0">1042</tspan><tspan fill="#8a8a93"> }</tspan></text>
+
+    <text x="64" y="552" fill="#7d8794" font-size="13">Validated by Pydantic —</text>
+    <text x="64" y="572" fill="#7d8794" font-size="13">malformed input rejected with 422.</text>
+  </g>
+
+  <!-- ============================ CARD 2 : GET /logs ============================ -->
+  <g>
+    <rect x="460" y="150" width="360" height="470" rx="14" fill="#121218" stroke="#2a2a33" stroke-width="1.5"/>
+    <rect x="484" y="172" width="56" height="28" rx="7" fill="#1e3a5f"/>
+    <text x="512" y="192" fill="#60a5fa" font-size="16" font-weight="700" text-anchor="middle" font-family="Consolas, monospace">GET</text>
+    <text x="552" y="193" fill="#ffffff" font-size="22" font-weight="600" font-family="Consolas, monospace">/logs</text>
+    <text x="484" y="226" fill="#9a9aa4" font-size="14">Fetch recent events (newest first)</text>
+
+    <text x="484" y="256" fill="#6b7280" font-size="12" font-weight="700" letter-spacing="1">RESPONSE  <tspan fill="#4ade80">200</tspan></text>
+    <rect x="484" y="266" width="312" height="258" rx="8" fill="#0a0a0e" stroke="#23232c" stroke-width="1"/>
+    <g font-family="Consolas, monospace" font-size="13">
+      <text x="498" y="290" fill="#c4c9d2">{</text>
+      <text x="512" y="311"><tspan fill="#6fb2f0">"count"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#b48ef0">200</tspan><tspan fill="#8a8a93">,</tspan></text>
+      <text x="512" y="332"><tspan fill="#6fb2f0">"logs"</tspan><tspan fill="#8a8a93">: [</tspan></text>
+      <text x="526" y="353" fill="#c4c9d2">{</text>
+      <text x="540" y="374"><tspan fill="#6fb2f0">"id"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#b48ef0">1042</tspan><tspan fill="#8a8a93">,</tspan></text>
+      <text x="540" y="395"><tspan fill="#6fb2f0">"raw_json"</tspan><tspan fill="#8a8a93">: { </tspan><tspan fill="#8a8a93">...</tspan><tspan fill="#8a8a93"> },</tspan></text>
+      <text x="540" y="416"><tspan fill="#6fb2f0">"created_at"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#e0c07a">"2026-06-10T..."</tspan></text>
+      <text x="526" y="437" fill="#c4c9d2">}</text>
+      <text x="512" y="458" fill="#8a8a93">]</text>
+      <text x="498" y="479" fill="#c4c9d2">}</text>
+    </g>
+
+    <text x="484" y="552" fill="#7d8794" font-size="13">Default limit 200,</text>
+    <text x="484" y="572" fill="#7d8794" font-size="13">ordered by id descending.</text>
+  </g>
+
+  <!-- ============================ CARD 3 : GET /health ============================ -->
+  <g>
+    <rect x="880" y="150" width="360" height="470" rx="14" fill="#121218" stroke="#2a2a33" stroke-width="1.5"/>
+    <rect x="904" y="172" width="56" height="28" rx="7" fill="#1e3a5f"/>
+    <text x="932" y="192" fill="#60a5fa" font-size="16" font-weight="700" text-anchor="middle" font-family="Consolas, monospace">GET</text>
+    <text x="972" y="193" fill="#ffffff" font-size="22" font-weight="600" font-family="Consolas, monospace">/health</text>
+    <text x="904" y="226" fill="#9a9aa4" font-size="14">Service health check</text>
+
+    <text x="904" y="256" fill="#6b7280" font-size="12" font-weight="700" letter-spacing="1">RESPONSE  <tspan fill="#4ade80">200</tspan></text>
+    <rect x="904" y="266" width="312" height="44" rx="8" fill="#0a0a0e" stroke="#23232c" stroke-width="1"/>
+    <text x="918" y="294" font-family="Consolas, monospace" font-size="13"><tspan fill="#8a8a93">{ </tspan><tspan fill="#6fb2f0">"ok"</tspan><tspan fill="#8a8a93">: </tspan><tspan fill="#4ade80">true</tspan><tspan fill="#8a8a93"> }</tspan></text>
+
+    <text x="904" y="356" fill="#7d8794" font-size="13">Lightweight liveness probe</text>
+    <text x="904" y="376" fill="#7d8794" font-size="13">used by Docker &amp; monitoring</text>
+    <text x="904" y="396" fill="#7d8794" font-size="13">to confirm the service is up.</text>
+  </g>
+
+  <!-- footer note -->
+  <text x="40" y="668" fill="#5f6670" font-size="14">Self-documenting via FastAPI — full interactive spec served at <tspan fill="#8a92a0" font-family="Consolas, monospace">/docs</tspan></text>
+</svg>
