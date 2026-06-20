@@ -1,12 +1,8 @@
-version: "3.9"
-
 services:
   frontend:
     build: ../HoneyNet-Frontend
     container_name: honeypot-frontend
-    depends_on:
-      - api
     environment:
-      - API_URL=http://localhost:8000
+      - API_URL=https://uddiejez3g.us-east-1.awsapprunner.com
     ports:
       - "3000:80"

@@ -1,25 +1,44 @@
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import { Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-
-import LoginPage from "./pages/Login";
-import DashboardPage from "./pages/Dashboard";
-import SessionsPage from "./pages/Sessions";
-import SessionDetailPage from "./pages/SessionDetail";
+// Pages
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import LiveFeed from "./pages/LiveFeed";
+import Sessions from "./pages/Sessions";
+import SessionDetail from "./pages/SessionDetail";
+import AttackAnalytics from "./pages/AttackAnalytics";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
 
+      
+      <Route path="/login" element={<Login />} />
+
+      {/* Default Redirect */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
+      {/* Protected Routes */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
             <Layout>
-              <DashboardPage />
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/live"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <LiveFeed />
             </Layout>
           </ProtectedRoute>
         }
@@ -30,23 +49,37 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Layout>
-              <SessionsPage />
+              <Sessions />
             </Layout>
           </ProtectedRoute>
         }
       />
-  <Route
-  path="/sessions/:sessionId"
-  element={
-    <ProtectedRoute>
-      <Layout>
-        <SessionDetailPage />
-      </Layout>
-    </ProtectedRoute>
-  }
-/>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+      <Route
+        path="/sessions/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SessionDetail />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AttackAnalytics />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+
     </Routes>
   );
 }
