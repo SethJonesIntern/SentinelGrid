@@ -71,6 +71,24 @@ def normalize_events(df: pd.DataFrame) -> pd.DataFrame:
     out["is_file_download"]= out["eventid"].astype(str).eq("cowrie.session.file_download").astype(int)
     out["is_file_upload"]= out["eventid"].astype(str).eq("cowrie.session.file_upload").astype(int)
 
+    # service type flags
+    out["is_ssh"] = out["eventid"].astype(str).str.startswith("cowrie.").astype(int)
+    out["is_http"] = out["eventid"].astype(str).str.startswith("http.").astype(int)
+    out["is_mysql"] = out["eventid"].astype(str).str.startswith("mysql.").astype(int)
+    out["is_redis"] = out["eventid"].astype(str).str.startswith("redis.").astype(int)
+    out["is_http_login_attempt"]= (out["eventid"].astype(str).eq("http.login.attempt")).astype(int)
+    out["is_http_page_visit"] = (out["eventid"].astype(str).eq("http.page.visit")).astype(int)
+    out["is_mysql_query"] = (out["eventid"].astype(str).eq("mysql.query")).astype(int)
+    out["is_redis_command"] = (out["eventid"].astype(str).eq("redis.command")).astype(int)
+    out["is_ftp"]= out["eventid"].astype(str).str.startswith("ftp.").astype(int)
+    out["is_smtp"] = out["eventid"].astype(str).str.startswith("smtp.").astype(int)
+    out["is_ftp_connect"] = (out["eventid"].astype(str).eq("ftp.session.connect")).astype(int)
+    out["is_ftp_disconnect"] = (out["eventid"].astype(str).eq("ftp.session.disconnect")).astype(int)
+    out["is_smtp_ehlo"] = (out["eventid"].astype(str).eq("smtp.ehlo")).astype(int)
+    out["is_smtp_connect"] = (out["eventid"].astype(str).eq("smtp.session.connect")).astype(int)
+    out["is_client_version"] = (out["eventid"].astype(str).eq("cowrie.client.version")).astype(int)
+    out["is_client_kex"] = (out["eventid"].astype(str).eq("cowrie.client.kex")).astype(int)
+
     return out
 
 #groups events by session id and computes durations
@@ -101,8 +119,33 @@ def aggregate_session_data(session_times: pd.DataFrame, sess_events: pd.DataFram
         unique_pass=("password", pd.Series.nunique),
     ).reset_index()
 
+    event_agg= sess_events.groupby("session_id").agg(
+        event_count=("eventid", "count"),
+        unique_event_types=("eventid", pd.Series.nunique),
+
+        ssh_events=("is_ssh", "sum"),
+        http_events=("is_http", "sum"),
+        mysql_events=("is_mysql", "sum"),
+        redis_events=("is_redis", "sum"),
+
+        http_login_attempts=("is_http_login_attempt", "sum"),
+        http_page_visits=("is_http_page_visit", "sum"),
+
+        mysql_queries=("is_mysql_query", "sum"),
+        redis_commands=("is_redis_command", "sum"),
+        ftp_events=("is_ftp", "sum"),
+        smtp_events=("is_smtp", "sum"),
+        ftp_connects=("is_ftp_connect", "sum"),
+        ftp_disconnects=("is_ftp_disconnect", "sum"),
+        smtp_ehlo_count=("is_smtp_ehlo", "sum"),
+        smtp_connects=("is_smtp_connect", "sum"),
+    ).reset_index()
+    
+
     #comands
-    cmd_df= sess_events[sess_events["eventid"].astype(str).eq("cowrie.command.input")& sess_events["command"].notna()].copy()
+
+    cmd_df = sess_events[sess_events["eventid"].astype(str).str.contains(
+        "command|query",case=False,na=False)].copy()
     cmd_agg= cmd_df.groupby("session_id").agg(
         cmd_count=("command", "count"),
         unique_cmds=("command", pd.Series.nunique),
@@ -125,6 +168,7 @@ def aggregate_session_data(session_times: pd.DataFrame, sess_events: pd.DataFram
         .merge(login_agg, on="session_id", how="left")
         .merge(cmd_agg, on="session_id", how="left")
         .merge(failed_cmd_agg, on="session_id", how="left")
+        .merge(event_agg, on="session_id", how="left")
     )
     
     #fill nas with 0
@@ -197,10 +241,84 @@ def add_behavioral_features(session_df: pd.DataFrame, sess_events: pd.DataFrame)
     session_df["has_any_commands"]= (session_df["cmd_count"]> 0).astype(int)
     session_df["has_failed_commands"]= (session_df["cmd_failed_count"]> 0).astype(int)
     session_df["is_local_src"]= session_df["src_ip"].isin(["127.0.0.1", "::1"]).astype(int)
+
+    # service ratios
+    session_df["ssh_ratio"] = (session_df["ssh_events"] /(session_df["event_count"] + 1e-9))
+    session_df["http_ratio"] = (session_df["http_events"] /(session_df["event_count"] + 1e-9))
+    session_df["mysql_ratio"]= (session_df["mysql_events"]/(session_df["event_count"] + 1e-9))
+    session_df["redis_ratio"]= (session_df["redis_events"] /(session_df["event_count"] + 1e-9))
+    session_df["ftp_ratio"] = (session_df["ftp_events"] /(session_df["event_count"] + 1e-9))
+    session_df["smtp_ratio"] = (session_df["smtp_events"]/(session_df["event_count"] + 1e-9))
+    duration_mins = (
+        session_df["duration"]
+        .clip(lower=1)
+        / 60
+    )
+    session_df["events_per_min"] = (
+        session_df["event_count"] /
+        duration_mins
+    )
+    session_df["services_touched"] = (
+    (session_df["ssh_events"] > 0).astype(int)
+    + (session_df["http_events"] > 0).astype(int)
+    + (session_df["ftp_events"] > 0).astype(int)
+    + (session_df["smtp_events"] > 0).astype(int)
+    + (session_df["mysql_events"] > 0).astype(int)
+    + (session_df["redis_events"] > 0).astype(int))
+
+
+    # protocol flags
+    session_df["is_ssh_protocol"]= (
+        session_df["protocol"].astype(str)
+        .str.contains("ssh", case=False, na=False) .astype(int))
+    
+    session_df["is_http_protocol"]= (
+        session_df["protocol"].astype(str)
+        .str.contains("http", case=False, na=False) .astype(int))
+
+    session_df["is_ftp_protocol"]= (
+        session_df["protocol"] .astype(str)
+        .str.contains("ftp", case=False, na=False).astype(int))
+
+    session_df["is_smtp_protocol"]= (
+        session_df["protocol"].astype(str)
+        .str.contains("smtp", case=False, na=False).astype(int))
+
+    session_df["is_mysql_protocol"] = (
+        session_df["protocol"].astype(str)
+        .str.contains("mysql", case=False, na=False).astype(int))
+
+    session_df["is_redis_protocol"] = (
+        session_df["protocol"].astype(str)
+        .str.contains("redis", case=False, na=False).astype(int))
+
+    session_df["has_http_activity"] = (
+    session_df["http_events"] > 0 ).astype(int)
+    session_df["has_ftp_activity"] = (session_df["ftp_events"] > 0).astype(int)
+    session_df["has_smtp_activity"] = (session_df["smtp_events"] > 0).astype(int)
+    session_df["has_mysql_activity"] = (session_df["mysql_events"] > 0).astype(int)
+    session_df["has_redis_activity"] = (session_df["redis_events"] > 0).astype(int)
+
+    def determine_service(row):
+        counts = {
+        "ssh": row["ssh_events"],
+        "http": row["http_events"],
+        "ftp": row["ftp_events"],
+        "smtp": row["smtp_events"],
+        "mysql": row["mysql_events"],
+        "redis": row["redis_events"],
+    }
+        return max(counts, key=counts.get)
+
+    session_df["primary_service"] = session_df.apply(
+        determine_service,
+        axis=1
+    )
     
     cmd_df= sess_events[sess_events["eventid"].astype(str).eq("cowrie.command.input")].copy()
     cmd_df["command_text"]= cmd_df["command"].combine_first(cmd_df["input"])
     cmds_per_session= cmd_df.dropna(subset=["command_text"]).groupby("session_id")["command_text"].apply(list).to_dict()
+
 
     def session_cmd_flags(commands: List[str]) -> Dict[str, int]:
         if not commands:
@@ -231,7 +349,12 @@ def extract_ml_features(session_df: pd.DataFrame) -> pd.DataFrame:
         "pw_entropy_per_char", "pw_entropy_total", "pw_normalized_entropy",
         "pw_length_mean", "pw_unique_chars_mean", "pw_total_strength",
         "has_successful_login", "has_any_commands", "has_failed_commands", "is_local_src",
-        "contains_recon_cmds", "contains_install_cmds", "contains_nav_cmds", "contains_exit_cmd"
+        "contains_recon_cmds", "contains_install_cmds", "contains_nav_cmds", "contains_exit_cmd",
+        "event_count","unique_event_types","services_touched","events_per_min",
+        "ssh_events","http_events", "mysql_events", "redis_events", "http_login_attempts", "http_page_visits",
+        "mysql_queries", "redis_commands", "ftp_events", "smtp_events","ssh_ratio", "http_ratio", "mysql_ratio", "redis_ratio",
+        "ftp_ratio", "smtp_ratio","is_ssh_protocol","is_http_protocol", "is_ftp_protocol",
+        "is_smtp_protocol", "is_mysql_protocol", "is_redis_protocol",
     ]
     
     # inlcuse GeoIP features if added
@@ -258,6 +381,15 @@ def process_pipeline(input_csv_path: str, output_dir: str):
         return
 
     events_df= normalize_events(events_df)
+    #print(events_df["protocol"].value_counts(dropna=False))
+    print("\nService Counts")
+    print("SSH Events:", events_df["is_ssh"].sum())
+    print("HTTP Events:", events_df["is_http"].sum())
+    print("FTP Events:", events_df["is_ftp"].sum())
+    print("SMTP Events:", events_df["is_smtp"].sum())
+    print("MySQL Events:", events_df["is_mysql"].sum())
+    print("Redis Events:", events_df["is_redis"].sum())
+
     session_times, sess_events= compute_session_boundaries(events_df)
     session_df= aggregate_session_data(session_times, sess_events)
     session_df= add_password_entropy(session_df, sess_events)
@@ -289,6 +421,7 @@ def process_pipeline(input_csv_path: str, output_dir: str):
     print(f"JSON files saved to: {json_dir}")
 
 
+
 if __name__ == "__main__":
     INPUT_DIR = Path("../data/processed/csv/") 
     OUTPUT_DIR = Path("../data/features/")
@@ -304,5 +437,8 @@ if __name__ == "__main__":
             print(f"Found {len(csv_files)} CSV file(s) to process.")
             #loop through and process each file
             for csv_file in csv_files:
+                #process just backends
+                if csv_file.stem != "backend_logs":
+                    continue
                 process_pipeline(str(csv_file), str(OUTPUT_DIR))
             print("\nAll datasets processed successfully!")

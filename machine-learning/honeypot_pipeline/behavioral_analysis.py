@@ -19,7 +19,7 @@ plt.rcParams["figure.figsize"] = (8, 5)
 def run_isolation_forest(df, X_scaled):
     iso_forest = IsolationForest(
         n_estimators=100,
-        contamination=0.01,
+        contamination=0.05,
         random_state=42
     )
 
@@ -41,7 +41,7 @@ def run_isolation_forest(df, X_scaled):
 
 
 #kmeans for behavioral clustering
-def run_kmeans_model(input_csv_path: str, output_dir: str):
+def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     input_path= Path(input_csv_path)
     dataset_name= input_path.stem.replace("_ml_features", "")
     
@@ -55,7 +55,19 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
         return
 
     # grabs all numeric columns while ignoring
-    exclude_cols= ['session', 'session_id', 'src_ip', 'session_start', 'session_end', 'source']
+    exclude_cols = [
+        'session',
+        'session_id',
+        'src_ip',
+        'session_start',
+        'session_end',
+        'source',
+        'attack_cluster',
+        'pca1',
+        'pca2',
+        'is_anomaly',
+        'anomaly_score'
+    ]
     numeric_cols= [col for col in df.columns if col not in exclude_cols and df[col].dtype in ['float64', 'int64']]
     X_raw= df[numeric_cols].copy()
 
@@ -65,18 +77,52 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
     X_raw.fillna(0, inplace=True)
     X_raw = X_raw.clip(lower=0)
     
+    model_features = X_raw.copy()
+    constant_cols = model_features.columns[
+        model_features.nunique() <= 1
+    ]
+
+    if len(constant_cols) > 0:
+        print("\nRemoving constant columns:")
+        print(list(constant_cols))
+
+    model_features = model_features.drop(
+        columns=constant_cols
+    )
+
+    print("\nLargest feature values:")
+    print(model_features.max().sort_values(ascending=False).head(20))
+
+    print("\nColumns containing inf:")
+    print(model_features.columns[np.isinf(model_features).any()])
+    print("\nColumns containing NaN:")
+    print(model_features.columns[model_features.isna().any()])
+
     #transformation and standardization
-    X_log = np.log1p(X_raw)
+    X_log = np.log1p(model_features)
     scaler = StandardScaler()
     X_scaled= scaler.fit_transform(X_log)
-    
+
+    pca_model = PCA(
+        n_components=0.95,
+        random_state=42
+    )
+    X_reduced = pca_model.fit_transform(X_scaled)
+
+    print(
+        f"\nFeature reduction: "
+        f"{X_scaled.shape[1]} -> "
+        f"{X_reduced.shape[1]}"
+    )
+        
     # find optimal k with silhouette score
     sil_scores= []
-    k_range= range(2, 10)
+    max_k = min(6, len(df) - 1)
+    k_range = range(2, max_k + 1)
     for k in k_range:
         km= KMeans(n_clusters=k, random_state= 42, n_init=10)
-        labels= km.fit_predict(X_scaled)
-        score= silhouette_score(X_scaled, labels)
+        labels= km.fit_predict(X_reduced)
+        score= silhouette_score(X_reduced, labels)
         sil_scores.append(score)
         
     best_k= k_range[np.argmax(sil_scores)]
@@ -84,20 +130,27 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
 
     #fit kmeans
     kmeans_final= KMeans(n_clusters= best_k, random_state=42, n_init=10)
-    df["attack_cluster"]= kmeans_final.fit_predict(X_scaled)
+    df["attack_cluster"]= kmeans_final.fit_predict(X_reduced)
+    cluster_profiles = (
+        df.groupby("attack_cluster")[model_features.columns]
+        .mean()
+    )
+
+    print("\nCluster Profiles:")
+    print(cluster_profiles.round(2))
     # pca dimensionality reduction
-    pca= PCA(n_components=2, random_state=42)
-    X_pca= pca.fit_transform(X_scaled)
+    viz_pca = PCA(n_components=2, random_state=42)
+    X_pca = viz_pca.fit_transform(X_reduced)
     df["pca1"]= X_pca[:, 0]
     df["pca2"]= X_pca[:, 1]
 
     #isolation forest
-    df, iso_model= run_isolation_forest(df, X_scaled)
+    df, iso_model= run_isolation_forest(df, X_reduced)
 
     #top contributing features for anomalies
     scaled_df = pd.DataFrame(
         X_scaled,
-        columns=numeric_cols
+        columns= model_features.columns
     )
 
     feature_means= X_raw.mean()
@@ -151,7 +204,11 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
     plot_dir= out_path/"plots"
     csv_dir.mkdir(parents=True, exist_ok=True)
     plot_dir.mkdir(parents=True, exist_ok=True)
-    
+    cluster_profiles.to_csv(
+        csv_dir / f"{dataset_name}_cluster_profiles.csv"
+    )
+
+
     
     #kmeans clusters
     plt.figure(figsize= (8, 6))
@@ -223,6 +280,7 @@ def run_kmeans_model(input_csv_path: str, output_dir: str):
             indent=4
         )
     
+    print("\nReached summary section")
 
     #summaries
     print("\nCluster counts:")
@@ -248,5 +306,5 @@ if __name__ == "__main__":
         else:
             print(f"Found {len(csv_files)} dataset(s) for modeling")
             for csv_file in csv_files:
-                run_kmeans_model(str(csv_file), str(OUTPUT_DIR))
-            print("\nKMeans modeling complete")
+                run_kmeans_and_iso(str(csv_file), str(OUTPUT_DIR))
+            print("\nKMeans modeling and isolation forest complete")

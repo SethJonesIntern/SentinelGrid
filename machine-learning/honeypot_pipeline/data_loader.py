@@ -141,10 +141,20 @@ if __name__ == "__main__":
     print("\nColumns:")
     print(df.columns.tolist())
 
+    print("\nUnique Event Types:")
+    print(sorted(df["eventid"].dropna().unique()))
+
     print("\nFirst 5 rows:")
     print(df.head())
 
+    print("\nUnique Sessions:")
+    print(df["session_id"].nunique())
+
+    print("\nSession IDs:")
+    print(df["session_id"].dropna().unique())
+
     save_outputs(df,OUTPUT_DIR,"backend_logs")
+
 
 
     # test pipeline
