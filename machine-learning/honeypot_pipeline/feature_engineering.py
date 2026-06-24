@@ -133,6 +133,8 @@ def aggregate_session_data(session_times: pd.DataFrame, sess_events: pd.DataFram
 
         mysql_queries=("is_mysql_query", "sum"),
         redis_commands=("is_redis_command", "sum"),
+        downloads=("is_file_download", "sum"),
+        uploads=("is_file_upload", "sum"),
         ftp_events=("is_ftp", "sum"),
         smtp_events=("is_smtp", "sum"),
         ftp_connects=("is_ftp_connect", "sum"),
@@ -249,6 +251,12 @@ def add_behavioral_features(session_df: pd.DataFrame, sess_events: pd.DataFrame)
     session_df["redis_ratio"]= (session_df["redis_events"] /(session_df["event_count"] + 1e-9))
     session_df["ftp_ratio"] = (session_df["ftp_events"] /(session_df["event_count"] + 1e-9))
     session_df["smtp_ratio"] = (session_df["smtp_events"]/(session_df["event_count"] + 1e-9))
+    session_df["download_ratio"] = (session_df["downloads"]/(session_df["event_count"] + 1e-9))
+    session_df["upload_ratio"] = (session_df["uploads"]/(session_df["event_count"] + 1e-9))
+    session_df["file_transfer_ratio"] = (
+        (session_df["downloads"] + session_df["uploads"]) /
+        (session_df["event_count"] + 1e-9)
+    )
     duration_mins = (
         session_df["duration"]
         .clip(lower=1)
@@ -350,10 +358,13 @@ def extract_ml_features(session_df: pd.DataFrame) -> pd.DataFrame:
         "pw_length_mean", "pw_unique_chars_mean", "pw_total_strength",
         "has_successful_login", "has_any_commands", "has_failed_commands", "is_local_src",
         "contains_recon_cmds", "contains_install_cmds", "contains_nav_cmds", "contains_exit_cmd",
+        "contains_persist_terms", "contains_exec_terms", "contains_kill_terms", "contains_network_terms",
         "event_count","unique_event_types","services_touched","events_per_min",
         "ssh_events","http_events", "mysql_events", "redis_events", "http_login_attempts", "http_page_visits",
-        "mysql_queries", "redis_commands", "ftp_events", "smtp_events","ssh_ratio", "http_ratio", "mysql_ratio", "redis_ratio",
-        "ftp_ratio", "smtp_ratio","is_ssh_protocol","is_http_protocol", "is_ftp_protocol",
+        "mysql_queries", "redis_commands", "downloads", "uploads", "ftp_events", "smtp_events",
+        "ssh_ratio", "http_ratio", "mysql_ratio", "redis_ratio",
+        "ftp_ratio", "smtp_ratio", "download_ratio", "upload_ratio", "file_transfer_ratio",
+        "is_ssh_protocol","is_http_protocol", "is_ftp_protocol",
         "is_smtp_protocol", "is_mysql_protocol", "is_redis_protocol",
     ]
     

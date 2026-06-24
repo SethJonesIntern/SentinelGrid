@@ -201,8 +201,10 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     #outputs
     out_path= Path(output_dir)
     csv_dir= out_path/"csv"
+    json_dir= out_path/"json"
     plot_dir= out_path/"plots"
     csv_dir.mkdir(parents=True, exist_ok=True)
+    json_dir.mkdir(parents=True, exist_ok=True)
     plot_dir.mkdir(parents=True, exist_ok=True)
     cluster_profiles.to_csv(
         csv_dir / f"{dataset_name}_cluster_profiles.csv"
@@ -269,7 +271,7 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     )
     #detailed anomaly explanations
     json_path = (
-        csv_dir /
+        json_dir /
         f"{dataset_name}_anomaly_explanations.json"
     )
 
