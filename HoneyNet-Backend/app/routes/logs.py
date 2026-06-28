@@ -8,7 +8,8 @@ from app.models import RawLog
 router = APIRouter()
 
 @router.get("/logs")
-def get_sessions(db: Session = Depends(get_db), limit: int = 200):
+@router.get("/sessions")
+def get_sessions(db: Session = Depends(get_db), limit: int = 1000000):
     rows = (
         db.query(RawLog)
         .order_by(desc(RawLog.id))

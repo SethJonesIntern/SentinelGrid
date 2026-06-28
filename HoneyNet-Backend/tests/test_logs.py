@@ -115,3 +115,26 @@ def test_logs_returns_rows_created_via_log_endpoint(client, valid_event_payload)
     assert entry["id"] == post.json()["id"]
     assert entry["raw_json"]["src_ip"] == "10.0.0.1"
     assert entry["raw_json"]["event_type"] == "ssh_login"
+
+
+def test_sessions_alias_returns_same_payload_as_logs(client, db_session):
+    _insert_raw_log(db_session, "10.0.0.1")
+    _insert_raw_log(db_session, "10.0.0.2")
+
+    logs_response = client.get("/logs")
+    sessions_response = client.get("/sessions")
+
+    assert sessions_response.status_code == 200
+    assert sessions_response.json() == logs_response.json()
+
+
+def test_sessions_alias_respects_limit_parameter(client, db_session):
+    for i in range(5):
+        _insert_raw_log(db_session, f"10.0.0.{i}")
+
+    response = client.get("/sessions", params={"limit": 2})
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["count"] == 2
+    assert len(body["logs"]) == 2
