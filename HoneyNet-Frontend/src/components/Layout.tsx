@@ -123,10 +123,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 fontWeight: 900,
                 color: "#020510"
               }}>
-                {(user?.email?.[0] ?? "S").toUpperCase()}
+                {(user?.username?.[0] ?? "S").toUpperCase()}
               </div>
               <span style={{ fontSize: 13, color: "#a8b5cc", fontWeight: 600 }}>
-                {user?.email ?? "student"}
+                {user?.username ?? "student"}
               </span>
             </div>
 

@@ -73,7 +73,6 @@ export default function DistributionPage() {
   );
   const total = distribution.reduce((s, p) => s + p.value, 0);
   const unclassified = useMemo(() => buildUnclassifiedSamples(logs), [logs]);
-  const oldestTs = logs.length > 0 ? logs[logs.length - 1].raw_json?.timestamp : undefined;
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -83,10 +82,6 @@ export default function DistributionPage() {
         <div style={topRow}>
           <div>
             <div style={pageTitle}>Honeypot Distribution</div>
-            <div style={subtle}>
-              {total.toLocaleString()} events classified across {distribution.length} honeypot type{distribution.length === 1 ? "" : "s"}
-              {oldestTs && <> · sampling most recent {FETCH_LIMIT.toLocaleString()} events, back to {new Date(oldestTs).toLocaleString()}</>}
-            </div>
           </div>
           <button onClick={() => void load()} style={btn}>{loading ? "Loading…" : "↺ Refresh"}</button>
         </div>

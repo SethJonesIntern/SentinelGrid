@@ -4,7 +4,7 @@ import { getUser, login } from "../lib/auth";
 
 export default function LoginPage() {
   const nav = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,11 +14,11 @@ export default function LoginPage() {
   }, [nav]);
 
   async function handleLogin() {
-    if (!email.trim() || !password) { setError("Email and password are required"); return; }
+    if (!username.trim() || !password) { setError("Username and password are required"); return; }
     setError("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(username.trim(), password);
       nav("/dashboard");
     } catch (e) {
       setError((e as Error).message || "Invalid email or password");
@@ -90,13 +90,13 @@ export default function LoginPage() {
 
         <div style={{ display: "grid", gap: 14 }}>
           <div>
-            <div style={label}>Email</div>
+            <div style={label}>Username</div>
             <input
               style={inputStyle}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
               spellCheck={false}
             />
           </div>

@@ -24,25 +24,25 @@ function setSession(token: string, user: AuthUser) {
 // unreachable/unfinished. `import.meta.env.DEV` is a compile-time constant —
 // Vite strips this branch out of production builds entirely, so it can never
 // ship in a deployed build.
-const DEV_BYPASS_EMAIL = "dev@local.test";
+const DEV_BYPASS_USERNAME = "devuser";
 const DEV_BYPASS_PASSWORD = "devbypass";
 
-export async function login(email: string, password: string): Promise<AuthUser> {
-  if (import.meta.env.DEV && email === DEV_BYPASS_EMAIL && password === DEV_BYPASS_PASSWORD) {
+export async function login(username: string, password: string): Promise<AuthUser> {
+  if (import.meta.env.DEV && username === DEV_BYPASS_USERNAME && password === DEV_BYPASS_PASSWORD) {
     console.warn("[auth] Using DEV-only bypass login — not a real backend session.");
-    const user: AuthUser = { id: "dev", email: DEV_BYPASS_EMAIL };
+    const user: AuthUser = { id: "dev", username: DEV_BYPASS_USERNAME };
     setSession("dev-bypass-token", user);
     return user;
   }
 
-  const { access_token } = await api.auth.login(email, password);
+  const { access_token } = await api.auth.login(username, password);
   const user = await api.auth.me(access_token);
   setSession(access_token, user);
   return user;
 }
 
-export async function signup(email: string, password: string): Promise<AuthUser> {
-  const { access_token } = await api.auth.signup(email, password);
+export async function signup(username: string, password: string, email?: string): Promise<AuthUser> {
+  const { access_token } = await api.auth.signup(username, password, email);
   const user = await api.auth.me(access_token);
   setSession(access_token, user);
   return user;

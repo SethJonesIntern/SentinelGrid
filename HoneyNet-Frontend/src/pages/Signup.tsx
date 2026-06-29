@@ -4,6 +4,7 @@ import { getUser, signup } from "../lib/auth";
 
 export default function SignupPage() {
   const nav = useNavigate();
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -15,14 +16,15 @@ export default function SignupPage() {
   }, [nav]);
 
   async function handleSignup() {
-    if (!email.trim() || !email.includes("@")) { setError("Valid email is required"); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (username.trim().length < 3) { setError("Username must be at least 3 characters"); return; }
+    if (email.trim() && !email.includes("@")) { setError("Email must be valid"); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
     if (password !== confirm) { setError("Passwords do not match"); return; }
 
     setError("");
     setLoading(true);
     try {
-      await signup(email.trim(), password);
+      await signup(username.trim(), password, email.trim() || undefined);
       nav("/dashboard");
     } catch (e) {
       setError((e as Error).message || "Could not create account");
@@ -94,7 +96,20 @@ export default function SignupPage() {
 
         <div style={{ display: "grid", gap: 14 }}>
           <div>
-            <div style={labelStyle}>Email</div>
+            <div style={labelStyle}>Username</div>
+            <input
+              style={inputStyle}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Min. 3 characters"
+              autoComplete="username"
+              spellCheck={false}
+            />
+          </div>
+
+          <div>
+            <div style={labelStyle}>Email (optional)</div>
             <input
               style={inputStyle}
               type="email"
@@ -112,7 +127,7 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters"
               autoComplete="new-password"
             />
           </div>

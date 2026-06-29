@@ -26,7 +26,8 @@ export type SessionsResponse = {
 
 export type AuthUser = {
   id: number | string;
-  email: string;
+  username: string;
+  email?: string | null;
 };
 
 export type TokenResponse = {
@@ -80,17 +81,22 @@ export const api = {
   logs: (limit = 200) =>
     http<SessionsResponse>(`/logs?limit=${encodeURIComponent(limit)}`),
 
+  sessions: (limit = 200) =>
+    http<SessionsResponse>(`/sessions?limit=${encodeURIComponent(limit)}`),
+
   auth: {
-    signup: (email: string, password: string) =>
+    // Backend's `users` table requires username (unique, not null); email is
+    // optional there, so signup takes it but login only needs username+password.
+    signup: (username: string, password: string, email?: string) =>
       http<TokenResponse>("/auth/signup", {
         method: "POST",
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password, email: email || undefined })
       }),
 
-    login: (email: string, password: string) =>
+    login: (username: string, password: string) =>
       http<TokenResponse>("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       }),
 
     me: (token: string) =>

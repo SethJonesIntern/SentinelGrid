@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="Segoe UI, Arial, sans-serif">
+  <!-- background -->
+  <rect width="1280" height="720" fill="#0c0c0f"/>
+
+  <!-- title -->
+  <text x="60" y="64" fill="#ffffff" font-size="40" font-weight="700">System Pipeline</text>
+  <text x="60" y="98" fill="#8a8a93" font-size="20">Attack data drives a closed control loop that reshapes the honeynet</text>
+
+  <!-- ===================== arrow marker defs ===================== -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cfcfd6"/>
+    </marker>
+    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f2a93b"/>
+    </marker>
+    <marker id="arrowML" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a98bf0"/>
+    </marker>
+  </defs>
+
+  <!-- ===================== ATTACKERS ===================== -->
+  <g>
+    <rect x="40" y="300" width="150" height="92" rx="12" fill="#17171c" stroke="#3a3a44" stroke-width="2"/>
+    <text x="115" y="338" fill="#ffffff" font-size="20" font-weight="600" text-anchor="middle">Attackers</text>
+    <text x="115" y="364" fill="#8a8a93" font-size="14" text-anchor="middle">scans, logins,</text>
+    <text x="115" y="382" fill="#8a8a93" font-size="14" text-anchor="middle">malware</text>
+  </g>
+
+  <!-- ===================== HONEYNET ===================== -->
+  <g>
+    <rect x="250" y="250" width="220" height="192" rx="14" fill="#1c1709" stroke="#f2a93b" stroke-width="2"/>
+    <text x="360" y="282" fill="#f2a93b" font-size="20" font-weight="700" text-anchor="middle">Honeynet</text>
+    <text x="360" y="302" fill="#a98b52" font-size="13" text-anchor="middle">honeypot containers</text>
+    <!-- container chips -->
+    <rect x="272" y="318" width="84" height="44" rx="8" fill="#2a2110" stroke="#f2a93b" stroke-width="1.5"/>
+    <text x="314" y="345" fill="#f2c878" font-size="13" text-anchor="middle">HTTP</text>
+    <rect x="364" y="318" width="84" height="44" rx="8" fill="#2a2110" stroke="#f2a93b" stroke-width="1.5"/>
+    <text x="406" y="345" fill="#f2c878" font-size="13" text-anchor="middle">SSH</text>
+    <rect x="272" y="372" width="84" height="44" rx="8" fill="#2a2110" stroke="#f2a93b" stroke-width="1.5"/>
+    <text x="314" y="399" fill="#f2c878" font-size="13" text-anchor="middle">SQL</text>
+    <rect x="364" y="372" width="84" height="44" rx="8" fill="#2a2110" stroke="#f2a93b" stroke-width="1.5"/>
+    <text x="406" y="399" fill="#f2c878" font-size="13" text-anchor="middle">Redis</text>
+  </g>
+
+  <!-- ===================== BACKEND ===================== -->
+  <g>
+    <rect x="540" y="276" width="230" height="140" rx="14" fill="#0e1a24" stroke="#3fa9f5" stroke-width="2.5"/>
+    <text x="655" y="312" fill="#3fa9f5" font-size="22" font-weight="700" text-anchor="middle">Backend API</text>
+    <text x="655" y="338" fill="#9fc6e6" font-size="14" text-anchor="middle">validate · normalize</text>
+    <text x="655" y="358" fill="#9fc6e6" font-size="14" text-anchor="middle">store · orchestrate</text>
+    <text x="655" y="392" fill="#5f7d92" font-size="13" text-anchor="middle">FastAPI</text>
+  </g>
+
+  <!-- ===================== DATABASE ===================== -->
+  <g>
+    <rect x="850" y="120" width="190" height="92" rx="12" fill="#13171c" stroke="#5f6b78" stroke-width="2"/>
+    <text x="945" y="158" fill="#cfd6de" font-size="20" font-weight="600" text-anchor="middle">Database</text>
+    <text x="945" y="184" fill="#7d8794" font-size="14" text-anchor="middle">PostgreSQL · JSONB</text>
+  </g>
+
+  <!-- ===================== ML MODEL ===================== -->
+  <g>
+    <rect x="850" y="300" width="190" height="100" rx="12" fill="#16101f" stroke="#a98bf0" stroke-width="2"/>
+    <text x="945" y="338" fill="#a98bf0" font-size="20" font-weight="700" text-anchor="middle">ML Model</text>
+    <text x="945" y="362" fill="#b9a6e6" font-size="13" text-anchor="middle">5 attack modes →</text>
+    <text x="945" y="380" fill="#b9a6e6" font-size="13" text-anchor="middle">target population</text>
+  </g>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <g>
+    <rect x="850" y="486" width="190" height="92" rx="12" fill="#0e1d1b" stroke="#2fc4b2" stroke-width="2"/>
+    <text x="945" y="524" fill="#2fc4b2" font-size="20" font-weight="600" text-anchor="middle">Dashboard</text>
+    <text x="945" y="550" fill="#6fb8af" font-size="14" text-anchor="middle">frontend</text>
+  </g>
+
+  <!-- ===================== FLOWS ===================== -->
+  <!-- attackers -> honeynet -->
+  <line x1="190" y1="346" x2="248" y2="346" stroke="#cfcfd6" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- honeynet -> backend (attack logs) -->
+  <line x1="470" y1="332" x2="538" y2="332" stroke="#cfcfd6" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="504" y="320" fill="#cfcfd6" font-size="13" text-anchor="middle">logs</text>
+
+  <!-- backend -> database (store) -->
+  <line x1="772" y1="300" x2="848" y2="190" stroke="#cfcfd6" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="815" y="232" fill="#9aa3ad" font-size="13" text-anchor="middle">store</text>
+
+  <!-- backend <-> ML (feed data / get population) -->
+  <line x1="772" y1="360" x2="848" y2="350" stroke="#a98bf0" stroke-width="2.5" marker-end="url(#arrowML)"/>
+  <line x1="848" y1="372" x2="772" y2="386" stroke="#a98bf0" stroke-width="2.5" marker-end="url(#arrowML)"/>
+  <text x="812" y="344" fill="#a98bf0" font-size="12" text-anchor="middle">data</text>
+  <text x="812" y="404" fill="#a98bf0" font-size="12" text-anchor="middle">population</text>
+
+  <!-- backend -> dashboard (GET /logs) -->
+  <line x1="772" y1="392" x2="848" y2="500" stroke="#cfcfd6" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="828" y="452" fill="#9aa3ad" font-size="13" text-anchor="middle">GET /logs</text>
+
+  <!-- ===================== CONTROL LOOP (backend -> start/stop -> honeynet) ===================== -->
+  <path d="M 655 416 L 655 640 L 360 640 L 360 444"
+        fill="none" stroke="#f2a93b" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrowLoop)"/>
+  <text x="508" y="664" fill="#f2a93b" font-size="15" font-weight="600" text-anchor="middle">start / stop honeypot containers</text>
+
+  <!-- loop label badge -->
+  <rect x="788" y="612" width="180" height="40" rx="8" fill="#1c1709" stroke="#f2a93b" stroke-width="1.5"/>
+  <text x="878" y="638" fill="#f2a93b" font-size="15" font-weight="700" text-anchor="middle">↻ control loop</text>
+</svg>
