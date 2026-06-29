@@ -1,36 +1,22 @@
-version: "3.9"
-
 services:
-
   db:
     image: postgres:16
     container_name: honeypot-db
     restart: always
-
-    env_file:
-      - .env
-
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: honeypot
     ports:
       - "5432:5432"
-
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
 
   api:
     build: .
     container_name: honeypot-api
-    depends_on:
-      - db
-
     env_file:
       - .env
-
+    depends_on:
+      - db
     ports:
       - "8000:8000"
-
     restart: always
-
-
-volumes:
-  pgdata:
