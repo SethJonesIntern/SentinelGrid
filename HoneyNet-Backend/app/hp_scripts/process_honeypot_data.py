@@ -21,8 +21,8 @@ processed_logs = []
 for log in logs:
     processed_logs.append({
         "timestamp": log.get("timestamp"),
-        "source_ip": log.get("source_ip"),
-        "event_type": log.get("event_type")
+        "source_ip": log.get("src_ip", "unknown"),
+        "event_type": log.get("eventid", "unknown")
     })
 
 print(f"Processed {len(processed_logs)} log entries.")
