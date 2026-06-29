@@ -32,6 +32,9 @@ __pycache__/
 # python test cache
 .pytest_cache/
 
+# sg-v4
+HoneyNet-Backend/sg-v4/
+
 # Model weights and checkpoints (all depths)
 *.pt
 *.pth
