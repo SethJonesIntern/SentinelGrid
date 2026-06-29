@@ -1,9 +1,10 @@
 from typing import Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.services.ml_model import predict_distribution
 from app.services.honeynet_state import honeynet_state, plan_redistribution
+from app.services.security import require_agent_token
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ def get_distribution():
     return {"distribution": predict_distribution()}
 
 
-@router.get("/honeynet/state")
+@router.get("/honeynet/state", dependencies=[Depends(require_agent_token)])
 def get_state():
     """
     Return how many honeypots of each type are currently running, plus the
@@ -29,7 +30,7 @@ def get_state():
     return {"counts": honeynet_state.counts(), "total": honeynet_state.total}
 
 
-@router.put("/honeynet/state")
+@router.put("/honeynet/state", dependencies=[Depends(require_agent_token)])
 def put_state(counts: Dict[str, int]):
     """
     Sync our view of the honeynet with the counts actually deployed. The body
@@ -39,7 +40,7 @@ def put_state(counts: Dict[str, int]):
     return {"counts": honeynet_state.counts(), "total": honeynet_state.total}
 
 
-@router.get("/redistribution")
+@router.get("/redistribution", dependencies=[Depends(require_agent_token)])
 def get_redistribution():
     """
     Combine the model's target distribution with the current honeynet state to

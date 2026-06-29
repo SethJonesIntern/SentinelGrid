@@ -1,8 +1,9 @@
 # app/services/honeynet_state.py
 
-from typing import Dict
+from typing import Dict, Optional
 
 from app.services.ml_model import HONEYPOT_TYPES
+from app.services.honeynet_store import HoneynetStateStore
 
 # The honeynet always runs one "base" honeypot of every type, so every kind of
 # attack has somewhere to land regardless of what the model says. With 6 types
@@ -27,13 +28,25 @@ class HoneynetState:
     Combined with a target distribution it lets us compute a concrete
     redistribution plan (see ``plan_redistribution``).
 
-    This is in-memory, single-process state. If/when the control loop needs to
-    survive restarts or run across workers, back this with the database instead
-    — the public surface here is the contract to preserve.
+    Persistence is optional and pluggable via a ``store`` (see honeynet_store).
+    With no store (the default) this is pure in-memory, single-process state and
+    behaves exactly as before. Pass a ``DbHoneynetStore`` to have the counts
+    hydrate on startup and persist on every change, surviving restarts — the
+    public surface here stays identical either way.
     """
 
-    def __init__(self, counts: Dict[str, int] | None = None):
+    def __init__(
+        self,
+        counts: Dict[str, int] | None = None,
+        store: Optional[HoneynetStateStore] = None,
+    ):
+        self._store = store
         self._counts: Dict[str, int] = {hp: 0 for hp in HONEYPOT_TYPES}
+
+        # Hydrate from the store first, so persisted counts survive a restart.
+        # Apply without persisting — we'd just be writing back what we read.
+        if store is not None:
+            self._apply(store.load())
         if counts:
             self.set_counts(counts)
 
@@ -52,6 +65,14 @@ class HoneynetState:
         honeynet with reality (e.g. after the orchestrator reports what's
         actually deployed).
         """
+        self._apply(counts)
+
+        # Persist the new state if we're backed by a store (no-op in-memory).
+        if self._store is not None:
+            self._store.save(self._counts)
+
+    def _apply(self, counts: Dict[str, int]) -> None:
+        """Validate and apply counts to the in-memory dict (no persistence)."""
         for honeypot, count in counts.items():
             if honeypot not in self._counts:
                 raise ValueError(f"Unknown honeypot type: {honeypot!r}")

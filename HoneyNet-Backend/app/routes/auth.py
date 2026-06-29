@@ -19,15 +19,19 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def signup(body: UserCreate, db: Session = Depends(get_db)):
     """Create a new account and return an access token for it."""
     existing = db.execute(
-        select(User).where(User.email == body.email)
+        select(User).where(User.username == body.username)
     ).scalar_one_or_none()
     if existing is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+            detail="Username already taken",
         )
 
-    user = User(email=body.email, hashed_password=hash_password(body.password))
+    user = User(
+        username=body.username,
+        email=body.email,
+        password_hash=hash_password(body.password),
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -39,16 +43,15 @@ def signup(body: UserCreate, db: Session = Depends(get_db)):
 def login(body: UserLogin, db: Session = Depends(get_db)):
     """Verify credentials and return an access token."""
     user = db.execute(
-        select(User).where(User.email == body.email)
+        select(User).where(User.username == body.username)
     ).scalar_one_or_none()
 
-    # Verify even when the user is missing isn't necessary here, but we keep the
-    # error identical for missing user vs wrong password so we don't leak which
-    # emails are registered.
-    if user is None or not verify_password(body.password, user.hashed_password):
+    # Same error for unknown user vs wrong password so we don't leak which
+    # usernames are registered.
+    if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Invalid username or password",
         )
 
     return Token(access_token=create_access_token(subject=str(user.id)))

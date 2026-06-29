@@ -1,6 +1,7 @@
 import os
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["AGENT_TOKEN"] = "test-agent-token"
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.compiler import compiles
@@ -69,6 +70,12 @@ def db_session():
 def client():
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def agent_headers():
+    """Auth header for the agent-protected honeynet endpoints."""
+    return {"Authorization": f"Bearer {os.environ['AGENT_TOKEN']}"}
 
 
 @pytest.fixture()

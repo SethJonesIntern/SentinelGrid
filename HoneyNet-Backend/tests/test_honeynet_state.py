@@ -9,6 +9,7 @@ from app.services.honeynet_state import (
     plan_redistribution,
     honeynet_state,
 )
+from app.services.honeynet_store import InMemoryHoneynetStore
 
 
 @pytest.fixture(autouse=True)
@@ -99,18 +100,51 @@ def test_plan_redistribution_targets_total_and_reports_deltas():
     assert sum(plan["delta"].values()) == TOTAL_HONEYPOTS - state.total
 
 
-def test_state_endpoints_round_trip(client):
-    put = client.put("/honeynet/state", json={"http": 2, "ssh": 1})
+def test_state_persists_to_store_on_set():
+    store = InMemoryHoneynetStore()
+    state = HoneynetState(store=store)
+    state.set_counts({"ssh": 5})
+    # the store should have captured the change
+    assert store.load()["ssh"] == 5
+
+
+def test_state_hydrates_from_store_on_init():
+    store = InMemoryHoneynetStore({"http": 4, "ssh": 2})
+    state = HoneynetState(store=store)
+    assert state.counts()["http"] == 4
+    assert state.counts()["ssh"] == 2
+
+
+def test_state_without_store_does_not_persist():
+    # default singleton-style usage: no store, pure in-memory, no errors
+    state = HoneynetState()
+    state.set_counts({"ftp": 3})
+    assert state.counts()["ftp"] == 3
+
+
+def test_state_endpoints_round_trip(client, agent_headers):
+    put = client.put("/honeynet/state", json={"http": 2, "ssh": 1}, headers=agent_headers)
     assert put.status_code == 200
     assert put.json()["total"] == 3
 
-    get = client.get("/honeynet/state")
+    get = client.get("/honeynet/state", headers=agent_headers)
     assert get.json()["counts"]["http"] == 2
     assert get.json()["total"] == 3
 
 
-def test_redistribution_endpoint(client):
-    client.put("/honeynet/state", json={"ssh": 8})
-    plan = client.get("/redistribution").json()
+def test_redistribution_endpoint(client, agent_headers):
+    client.put("/honeynet/state", json={"ssh": 8}, headers=agent_headers)
+    plan = client.get("/redistribution", headers=agent_headers).json()
     assert sum(plan["target"].values()) == TOTAL_HONEYPOTS
     assert set(plan["delta"].keys()) == set(HONEYPOT_TYPES)
+
+
+def test_protected_endpoints_reject_without_token(client):
+    assert client.get("/honeynet/state").status_code == 401
+    assert client.get("/redistribution").status_code == 401
+    assert client.put("/honeynet/state", json={"ssh": 1}).status_code == 401
+
+
+def test_protected_endpoints_reject_wrong_token(client):
+    bad = {"Authorization": "Bearer wrong-token"}
+    assert client.get("/honeynet/state", headers=bad).status_code == 401

@@ -1,0 +1,15 @@
+[Unit]
+Description=HoneyNet DO Agent (reconciles honeypot containers to backend target)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/honeynet-agent
+EnvironmentFile=/opt/honeynet-agent/config.env
+ExecStart=/usr/bin/python3 /opt/honeynet-agent/agent.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

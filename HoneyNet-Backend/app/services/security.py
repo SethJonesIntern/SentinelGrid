@@ -116,6 +116,25 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 # --- current-user dependency ------------------------------------------------
 
+def require_agent_token(token: str = Depends(oauth2_scheme)) -> None:
+    """
+    Dependency for machine-to-machine routes (the DO agent's calls).
+
+    Checks the bearer token against the static `AGENT_TOKEN` env var instead of
+    a user JWT — a daemon shouldn't juggle expiring tokens or need a user
+    account. Read at call time so the test suite (and App Runner) can set it via
+    the environment. Fails closed: if `AGENT_TOKEN` isn't configured, everything
+    is rejected.
+    """
+    expected = os.getenv("AGENT_TOKEN", "")
+    if not expected or not hmac.compare_digest(token, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing agent token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
