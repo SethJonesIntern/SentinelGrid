@@ -1,0 +1,37 @@
+# Example honeypot compose — one SERVICE per honeypot TYPE.
+# The agent scales these by name (TYPE_TO_SERVICE in agent.py must match).
+#
+# ⚠️ PORT/SCALING CAVEAT: you cannot `--scale` a service that publishes a fixed
+# host port (only one container can bind host :2222). To run >1 of a type on a
+# single Droplet you must either:
+#   - publish a host-port RANGE / let Docker pick (e.g. "2222-2240:2222"), or
+#   - front the replicas with a proxy / Swarm ingress, or
+#   - run replicas across multiple Droplets.
+# Decide this with the honeypot owner — it directly affects whether the
+# "12 honeypots, multiple per type" model works on one host. See README.
+
+services:
+  ssh:
+    image: cowrie/cowrie:latest
+    # ports: ["2222-2240:2222"]   # range so the service can scale
+    restart: unless-stopped
+
+  http:
+    image: your/http-honeypot:latest
+    restart: unless-stopped
+
+  redis:
+    image: your/redis-honeypot:latest
+    restart: unless-stopped
+
+  mysql:
+    image: your/mysql-honeypot:latest
+    restart: unless-stopped
+
+  ftp:
+    image: your/ftp-honeypot:latest
+    restart: unless-stopped
+
+  smtp:
+    image: your/smtp-honeypot:latest
+    restart: unless-stopped
