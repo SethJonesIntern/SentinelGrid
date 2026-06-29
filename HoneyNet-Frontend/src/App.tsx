@@ -5,11 +5,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import LiveFeed from "./pages/LiveFeed";
 import Sessions from "./pages/Sessions";
 import SessionDetail from "./pages/SessionDetail";
 import AttackAnalytics from "./pages/AttackAnalytics";
+import Distribution from "./pages/Distribution";
 
 export default function App() {
   return (
@@ -17,6 +19,7 @@ export default function App() {
 
       
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
 
       {/* Default Redirect */}
       <Route path="/" element={<Navigate to="/login" replace />} />
@@ -72,6 +75,17 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <AttackAnalytics />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/distribution"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Distribution />
             </Layout>
           </ProtectedRoute>
         }

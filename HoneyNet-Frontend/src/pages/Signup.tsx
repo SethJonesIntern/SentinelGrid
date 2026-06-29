@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getUser, login } from "../lib/auth";
+import { getUser, signup } from "../lib/auth";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,15 +14,18 @@ export default function LoginPage() {
     if (getUser()) nav("/dashboard");
   }, [nav]);
 
-  async function handleLogin() {
-    if (!email.trim() || !password) { setError("Email and password are required"); return; }
+  async function handleSignup() {
+    if (!email.trim() || !email.includes("@")) { setError("Valid email is required"); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (password !== confirm) { setError("Passwords do not match"); return; }
+
     setError("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await signup(email.trim(), password);
       nav("/dashboard");
     } catch (e) {
-      setError((e as Error).message || "Invalid email or password");
+      setError((e as Error).message || "Could not create account");
     } finally {
       setLoading(false);
     }
@@ -84,32 +88,45 @@ export default function LoginPage() {
             SENTINELGRID
           </div>
           <div style={{ fontSize: 11, color: "#3d4f6e", marginTop: 4, letterSpacing: "0.06em" }}>
-            SECURITY OPERATIONS CENTER
+            CREATE ACCOUNT
           </div>
         </div>
 
         <div style={{ display: "grid", gap: 14 }}>
           <div>
-            <div style={label}>Email</div>
+            <div style={labelStyle}>Email</div>
             <input
               style={inputStyle}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
               autoComplete="email"
-              spellCheck={false}
             />
           </div>
 
           <div>
-            <div style={label}>Password</div>
+            <div style={labelStyle}>Password</div>
             <input
               style={inputStyle}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              autoComplete="current-password"
+              placeholder="Min. 6 characters"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div>
+            <div style={labelStyle}>Confirm Password</div>
+            <input
+              style={inputStyle}
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSignup()}
+              placeholder="Repeat password"
+              autoComplete="new-password"
             />
           </div>
 
@@ -128,7 +145,7 @@ export default function LoginPage() {
           )}
 
           <button
-            onClick={handleLogin}
+            onClick={handleSignup}
             disabled={loading}
             style={{
               marginTop: 6,
@@ -147,15 +164,16 @@ export default function LoginPage() {
               transition: "all 0.2s"
             }}
           >
-            {loading ? "AUTHENTICATING..." : "ACCESS SYSTEM"}
+            {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
           </button>
 
-          
-
           <div style={{ textAlign: "center", fontSize: 12, color: "#3d5278" }}>
-            Don't have an account?{" "}
-            <Link to="/signup" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 700 }}>
-              Sign up
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 700 }}
+            >
+              Sign in
             </Link>
           </div>
         </div>
@@ -164,7 +182,7 @@ export default function LoginPage() {
   );
 }
 
-const label: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
   letterSpacing: "0.12em",

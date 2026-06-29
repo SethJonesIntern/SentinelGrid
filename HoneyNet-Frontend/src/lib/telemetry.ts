@@ -155,6 +155,68 @@ export function buildTopCommands(logs: RawLogRow[], limit = 8): CountPoint[] {
     .slice(0, limit);
 }
 
+export type HoneypotType = "SSH" | "HTTP" | "Redis" | "MySQL" | "FTP" | "SMTP" | "Other";
+
+const TYPE_PATTERNS: { type: HoneypotType; patterns: RegExp[] }[] = [
+  { type: "SSH", patterns: [/ssh/i, /cowrie/i, /telnet/i] },
+  { type: "HTTP", patterns: [/http/i, /\bweb\b/i] },
+  { type: "Redis", patterns: [/redis/i] },
+  { type: "MySQL", patterns: [/mysql/i] },
+  { type: "FTP", patterns: [/ftp/i] },
+  { type: "SMTP", patterns: [/smtp/i] },
+];
+
+export function classifyHoneypotType(log: RawLogRow): HoneypotType {
+  const raw = log.raw_json;
+  const payload = raw?.payload as Record<string, unknown> | undefined;
+  const protocolHint = payload?.protocol;
+
+  const candidates = [
+    raw?.sensor_id,
+    typeof protocolHint === "string" ? protocolHint : undefined,
+    raw?.event_type
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    const match = TYPE_PATTERNS.find(({ patterns }) => patterns.some((p) => p.test(candidate)));
+    if (match) return match.type;
+  }
+
+  return "Other";
+}
+
+// Surfaces what's actually landing in "Other" (sensor_id/event_type pairs) so a
+// new honeypot whose naming doesn't match TYPE_PATTERNS is easy to spot and fix.
+export function buildUnclassifiedSamples(logs: RawLogRow[], limit = 6): CountPoint[] {
+  const counts = new Map<string, number>();
+
+  for (const log of logs) {
+    if (classifyHoneypotType(log) !== "Other") continue;
+    const raw = log.raw_json;
+    const label = `${raw?.sensor_id ?? "no sensor_id"} · ${raw?.event_type ?? "no event_type"}`;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+export function buildHoneypotDistribution(logs: RawLogRow[]): CountPoint[] {
+  const counts = new Map<HoneypotType, number>();
+
+  for (const log of logs) {
+    const type = classifyHoneypotType(log);
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
 export function buildAttacksPerHour(logs: RawLogRow[]): CountPoint[] {
   const counts = new Map<string, number>();
 

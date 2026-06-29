@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [pollMs, setPollMs] = useState(15000);
+  const [pollMs, setPollMs] = useState(5000);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   async function load() {

@@ -97,6 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavItem to="/live" label="Live Feed" />
             <NavItem to="/sessions" label="Sessions" />
             <NavItem to="/analytics" label="Analytics" />
+            <NavItem to="/distribution" label="Distribution" />
           </nav>
 
           {/* User */}
@@ -122,10 +123,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 fontWeight: 900,
                 color: "#020510"
               }}>
-                {(user?.username?.[0] ?? "S").toUpperCase()}
+                {(user?.email?.[0] ?? "S").toUpperCase()}
               </div>
               <span style={{ fontSize: 13, color: "#a8b5cc", fontWeight: 600 }}>
-                {user?.username ?? "student"}
+                {user?.email ?? "student"}
               </span>
             </div>
 
