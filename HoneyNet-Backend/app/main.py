@@ -5,6 +5,7 @@ from app.routes.health import router as health_router
 from app.routes.log import router as log_router
 from app.routes.logs import router as sessions_router
 from app.routes.ml import router as ml_router
+from app.routes.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -24,3 +25,4 @@ app.include_router(health_router)
 app.include_router(log_router)
 app.include_router(sessions_router)
 app.include_router(ml_router)
+app.include_router(auth_router)
