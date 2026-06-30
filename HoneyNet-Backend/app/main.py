@@ -6,6 +6,7 @@ from app.routes.log import router as log_router
 from app.routes.logs import router as sessions_router
 from app.routes.ml import router as ml_router
 from app.routes.auth import router as auth_router
+from app.routes.geo import router as geo_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -26,3 +27,4 @@ app.include_router(log_router)
 app.include_router(sessions_router)
 app.include_router(ml_router)
 app.include_router(auth_router)
+app.include_router(geo_router)
