@@ -58,7 +58,7 @@ def test_logs_response_schema(client, db_session):
     assert response.status_code == 200
 
     entry = response.json()["logs"][0]
-    assert set(entry.keys()) == {"id", "raw_json", "created_at"}
+    assert set(entry.keys()) == {"id", "raw_json", "created_at", "active_honeypot_count"}
     assert entry["id"] == inserted.id
     assert entry["raw_json"]["src_ip"] == "10.0.0.9"
     assert entry["raw_json"]["event_type"] == "port_scan"

@@ -35,6 +35,9 @@ __pycache__/
 # sg-v4
 HoneyNet-Backend/sg-v4/
 
+# real agent config (holds the live AGENT_TOKEN); keep only config.example.env in git
+**/config.env
+
 # Model weights and checkpoints (all depths)
 *.pt
 *.pth

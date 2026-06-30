@@ -2,7 +2,7 @@
 """
 HoneyNet DO Agent  —  the "hands" that run on the DigitalOcean Droplet.
 
-Pull-model reconciler (SKELETON):
+Pull-model reconciler:
   1. GET  {BACKEND_URL}/redistribution   -> desired target counts per honeypot type
   2. reconcile local Docker to that target (docker compose --scale)
   3. PUT  {BACKEND_URL}/honeynet/state    -> report the REAL running counts back
@@ -13,8 +13,14 @@ Why pull, not push: the Droplet only makes OUTBOUND calls, so we never open a
 Zero third-party deps on purpose (stdlib only) so it's trivial to run on a fresh
 Droplet: `python3 agent.py`. Config comes from environment (see config.example.env).
 
-NOTE: the two reconcile/report functions are stubs marked TODO — drop the real
-start/stop specifics in there once you have them.
+About counts (variable per type, distinct ports): the scalable honeypots in
+sg-v4 (ssh, http, mysql, smtp, redis) have no container_name and publish a host
+port RANGE (see docker-compose/sentinelgrid-honeypots.yml), so we reconcile each
+to the backend's target with `docker compose up -d --scale <svc>=N` and compose
+gives every replica its own distinct host port. FTP is the exception: its
+passive-data ports must map 1:1 host<->container, leaving no room for per-replica
+ports, so it stays a single instance (see SINGLE_INSTANCE_TYPES) and we cap its
+target at 1, warning if the backend asks for more.
 """
 
 import json
@@ -28,18 +34,27 @@ import urllib.request
 BACKEND_URL = os.getenv("BACKEND_URL", "https://your-app-runner-url").rstrip("/")
 AGENT_TOKEN = os.getenv("AGENT_TOKEN", "")            # bearer token for the backend
 POLL_SECONDS = int(os.getenv("POLL_SECONDS", "15"))
-COMPOSE_FILE = os.getenv("COMPOSE_FILE", "docker-compose.honeypots.yml")
+COMPOSE_FILE = os.getenv("COMPOSE_FILE", "docker-compose/sentinelgrid-honeypots.yml")
 
 # Maps a honeypot TYPE (from the backend) -> the docker compose SERVICE name.
+# In sg-v4 the service key == container_name (e.g. "sg-ssh-01"), so this same
+# value is both what we pass to `docker compose` and the value of the
+# `com.docker.compose.service` label we filter on when counting (see below).
 # Keep these in sync with the services defined in COMPOSE_FILE.
 TYPE_TO_SERVICE = {
-    "ssh": "ssh",
-    "http": "http",
-    "redis": "redis",
-    "mysql": "mysql",
-    "ftp": "ftp",
-    "smtp": "smtp",
+    "ssh": "sg-ssh-01",
+    "http": "sg-http-01",
+    "redis": "sg-redis-01",
+    "mysql": "sg-mysql-01",
+    "ftp": "sg-ftp-01",
+    "smtp": "sg-smtp-01",
 }
+
+# Types that can't run as multiple replicas on one host, so their target is
+# capped at 1. FTP's passive-data ports (60000-60100) must map 1:1
+# host<->container, which leaves no host ports for compose to assign per replica;
+# it keeps a fixed container_name + fixed ports in COMPOSE_FILE.
+SINGLE_INSTANCE_TYPES = {"ftp"}
 
 
 # --- backend I/O ------------------------------------------------------------
@@ -65,46 +80,56 @@ def report_actual(counts: dict[str, int]) -> None:
     _request("PUT", "/honeynet/state", body=counts)
 
 
-# --- docker reconcile / inspect (STUBS — fill with your specifics) ----------
+# --- docker reconcile / inspect --------------------------------------------
+
+def _docker(*args: str) -> subprocess.CompletedProcess:
+    """Run a `docker ...` command, capturing output. Raises on non-zero exit."""
+    return subprocess.run(["docker", *args], capture_output=True, text=True, check=True)
+
+
+def _compose(*args: str) -> subprocess.CompletedProcess:
+    """Run a `docker compose -f COMPOSE_FILE ...` command."""
+    return _docker("compose", "-f", COMPOSE_FILE, *args)
+
 
 def reconcile(target: dict[str, int]) -> None:
     """
-    Make local Docker match `target` (e.g. {"ssh": 3, "http": 2, ...}).
-
-    TODO: confirm the exact start/stop mechanism with the honeypot setup.
-    The compose `--scale` approach below reconciles to a desired count in one
-    shot (it figures out the +/- itself), which matches the backend's model.
+    Make local Docker match `target` (e.g. {"ssh": 3, "http": 2, ...}) by
+    scaling each compose service to its desired replica count in one shot:
+    `docker compose up -d --scale <svc>=N` figures out the +/- itself and hands
+    each replica a distinct host port from that service's range. Scaling to 0
+    tears a type down. SINGLE_INSTANCE_TYPES are capped at 1 (see note there).
     """
-    scale_args = []
-    for hp_type, count in target.items():
-        service = TYPE_TO_SERVICE.get(hp_type)
-        if service is None:
-            print(f"[warn] no compose service mapped for type {hp_type!r}; skipping")
-            continue
+    scale_args: list[str] = []
+    for hp_type, service in TYPE_TO_SERVICE.items():
+        count = target.get(hp_type, 0)
+        if hp_type in SINGLE_INSTANCE_TYPES and count > 1:
+            print(f"[warn] {hp_type!r} can't run replicas (passive/data ports); capping {count} -> 1")
+            count = 1
         scale_args += ["--scale", f"{service}={count}"]
 
-    cmd = ["docker", "compose", "-f", COMPOSE_FILE, "up", "-d", "--remove-orphans", *scale_args]
-    print("[reconcile]", " ".join(cmd))
-    # TODO: un-stub once the compose file + port strategy are confirmed.
-    # subprocess.run(cmd, check=True)
+    print(f"[reconcile] up -d --remove-orphans {' '.join(scale_args)}")
+    _compose("up", "-d", "--remove-orphans", *scale_args)
 
 
 def actual_counts() -> dict[str, int]:
     """
-    Count running containers per honeypot type from Docker itself.
+    Count running containers per honeypot type from Docker itself, so the state
+    we report back is reality rather than what we intended.
 
-    TODO: implement using whatever label/name scheme the honeypot compose uses,
-    e.g. `docker ps --filter label=com.docker.compose.service=<svc> -q | wc -l`.
+    Filters on the compose service label (its value is the service key, e.g.
+    "sg-ssh-01"), which all replicas of a service share, so this returns the
+    real replica count per type.
     """
     counts: dict[str, int] = {}
     for hp_type, service in TYPE_TO_SERVICE.items():
-        # TODO: replace stub with a real `docker ps` count for `service`.
-        # out = subprocess.run(
-        #     ["docker", "ps", "--filter",
-        #      f"label=com.docker.compose.service={service}", "-q"],
-        #     capture_output=True, text=True, check=True)
-        # counts[hp_type] = len([l for l in out.stdout.splitlines() if l.strip()])
-        counts[hp_type] = 0
+        out = _docker(
+            "ps",
+            "--filter", f"label=com.docker.compose.service={service}",
+            "--filter", "status=running",
+            "-q",
+        )
+        counts[hp_type] = len([line for line in out.stdout.splitlines() if line.strip()])
     return counts
 
 
