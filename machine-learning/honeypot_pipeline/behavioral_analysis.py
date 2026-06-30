@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -14,6 +16,7 @@ from sklearn.decomposition import PCA
 
 sns.set_style("whitegrid")
 plt.rcParams["figure.figsize"] = (8, 5)
+warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*matmul.*")
 
 #isolation forest for anomly detection 
 def run_isolation_forest(df, X_scaled):
@@ -81,13 +84,15 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     constant_cols = model_features.columns[
         model_features.nunique() <= 1
     ]
+    low_var_cols= model_features.columns[model_features.std() < 1e-6]
+    cols_to_drop= constant_cols.union(low_var_cols)
 
-    if len(constant_cols) > 0:
-        print("\nRemoving constant columns:")
-        print(list(constant_cols))
+    if len(cols_to_drop)> 0:
+        print("\nRemoving constant/near-zero variance columns:")
+        print(list(cols_to_drop))
 
     model_features = model_features.drop(
-        columns=constant_cols
+        columns=cols_to_drop
     )
 
     print("\nLargest feature values:")
@@ -99,15 +104,19 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     print(model_features.columns[model_features.isna().any()])
 
     #transformation and standardization
+    #cap outliers at 99th percentile per column before log transform
+    upper = model_features.quantile(0.99)
+    model_features = model_features.clip(upper=upper, axis=1)
+
     X_log = np.log1p(model_features)
     scaler = StandardScaler()
-    X_scaled= scaler.fit_transform(X_log)
+    X_scaled = scaler.fit_transform(X_log)
+    X_scaled = np.nan_to_num(X_scaled, nan=0.0, posinf=0.0, neginf=0.0)
+    X_scaled = np.clip(X_scaled, -5, 5)
 
-    pca_model = PCA(
-        n_components=0.95,
-        random_state=42
-    )
+    pca_model = PCA(n_components=0.95, svd_solver='full', random_state=42)
     X_reduced = pca_model.fit_transform(X_scaled)
+    X_reduced = np.nan_to_num(X_reduced, nan=0.0, posinf=0.0, neginf=0.0)
 
     print(
         f"\nFeature reduction: "
@@ -139,8 +148,8 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     print("\nCluster Profiles:")
     print(cluster_profiles.round(2))
     # pca dimensionality reduction
-    viz_pca = PCA(n_components=2, random_state=42)
-    X_pca = viz_pca.fit_transform(X_reduced)
+    viz_pca = PCA(n_components=2, svd_solver='full', random_state=42)
+    X_pca = viz_pca.fit_transform(X_scaled)
     df["pca1"]= X_pca[:, 0]
     df["pca2"]= X_pca[:, 1]
 

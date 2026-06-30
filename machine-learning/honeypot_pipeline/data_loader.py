@@ -7,9 +7,27 @@ from pathlib import Path
 import json
 import requests
 
+HONEYPOT_COUNT_COLS= [
+    "ssh_honeypot_count",
+    "http_honeypot_count",
+    "mysql_honeypot_count",
+    "redis_honeypot_count",
+    "ftp_honeypot_count",
+    "smtp_honeypot_count",
+]
+
+#map event_type to which honeypot count it belongs to
+EVENT_PREFIX_TO_COUNT_COL= {
+    "cowrie": "ssh_honeypot_count",
+    "http": "http_honeypot_count",
+    "mysql":"mysql_honeypot_count",
+    "redis": "redis_honeypot_count",
+    "ftp": "ftp_honeypot_count",
+    "smtp":"smtp_honeypot_count",
+}
 
 #loads logs from the backend 
-def load_backend_logs(api_url="http://localhost:8000/sessions?limit=5000") -> pd.DataFrame:
+def load_backend_logs(api_url="https://uddiejez3g.us-east-1.awsapprunner.com/sessions") -> pd.DataFrame:
     response = requests.get(api_url)
     response.raise_for_status()
     data= response.json()
@@ -24,7 +42,6 @@ def load_backend_logs(api_url="http://localhost:8000/sessions?limit=5000") -> pd
     for row in data["logs"]:
         event= row["raw_json"]
         payload= event.get("payload", {})
-
         record= {
             "timestamp": event.get("timestamp"),
             "src_ip": event.get("src_ip"),
@@ -37,13 +54,23 @@ def load_backend_logs(api_url="http://localhost:8000/sessions?limit=5000") -> pd
         record["session_id"] = event.get("session_id")
         record["eventid"] = event.get("event_type")
         record["src_ip"] = event.get("src_ip")
+
+        #finds the event type and maps the honeypot type count
+        for col in HONEYPOT_COUNT_COLS:
+            record[col] = 0
+        event_type = event.get("event_type","")
+        prefix= event_type.split(".")[0] if event_type else ""
+        count_col = EVENT_PREFIX_TO_COUNT_COL.get(prefix)
+        if count_col:
+            active_count=(
+                row.get("active_honeypot_count") or event.get("active_honeypot_count")
+                or payload.get("active_honeypot_count", 0))
+            record[count_col]= active_count
         records.append(record)
 
     df= pd.DataFrame(records)
     df["source"] = "backend"
- 
     return df
-
 
 #load cowrie JSON honeypot logs into dataframe
 def load_cowrie_json(path:str)-> pd.DataFrame:
@@ -60,23 +87,19 @@ def load_cowrie_json(path:str)-> pd.DataFrame:
                 event["geo_latitude"] = geo.get("latitude")
                 event["geo_longitude"] = geo.get("longitude")
                 event["geo_timezone"] = geo.get("timezone")
-
-                location = geo.get("location", {})
+                location= geo.get("location", {})
                 event["geo_loc_lat"] = location.get("lat")
                 event["geo_loc_lon"] = location.get("lon")
                 event.pop("geolocation_data", None)
                 all_events.append(event)
-
     df= pd.DataFrame(all_events)
     df["source"]= "cowrie"
-
     return df
 
 #load other honeypot datasets if we have
-def load_other_honeypot(path: str, source_name: str) -> pd.DataFrame:
+def load_other_honeypot(path: str, source_name: str)-> pd.DataFrame:
     df= pd.read_json(path)
     df["source"]= source_name
-
     return df
 
 #save outputs of csv and json
@@ -154,8 +177,6 @@ if __name__ == "__main__":
     print(df["session_id"].dropna().unique())
 
     save_outputs(df,OUTPUT_DIR,"backend_logs")
-
-
 
     # test pipeline
     #INPUT_DIR = "../data/Zenodo Honeypot Data/"

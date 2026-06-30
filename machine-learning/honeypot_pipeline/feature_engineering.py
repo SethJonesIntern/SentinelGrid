@@ -164,6 +164,17 @@ def aggregate_session_data(session_times: pd.DataFrame, sess_events: pd.DataFram
         last_failed_cmd=("command", last_nonnull),
     ).reset_index()
 
+    #take last known value per session for honeypot count cols 
+    honeypot_count_cols= [
+        "ssh_honeypot_count", "http_honeypot_count", "mysql_honeypot_count",
+        "redis_honeypot_count", "ftp_honeypot_count", "smtp_honeypot_count",
+    ]
+    available_count_cols= [c for c in honeypot_count_cols if c in sess_events.columns]
+    if available_count_cols:
+        count_agg= sess_events.groupby("session_id")[available_count_cols].last().reset_index()
+    else:
+        count_agg= None
+
     session_df=(
         session_times
         .merge(session_net, on="session_id", how="left")
@@ -172,6 +183,10 @@ def aggregate_session_data(session_times: pd.DataFrame, sess_events: pd.DataFram
         .merge(failed_cmd_agg, on="session_id", how="left")
         .merge(event_agg, on="session_id", how="left")
     )
+    if count_agg is not None:
+        session_df= session_df.merge(count_agg, on="session_id", how="left")
+        for c in available_count_cols:
+            session_df[c] = session_df[c].fillna(0).astype(int)
     
     #fill nas with 0
     count_cols= ["login_success", "login_fail", "unique_users", "unique_pass", "cmd_count", "unique_cmds", "cmd_failed_count", "unique_failed_cmds"]
@@ -368,10 +383,12 @@ def extract_ml_features(session_df: pd.DataFrame) -> pd.DataFrame:
         "is_smtp_protocol", "is_mysql_protocol", "is_redis_protocol",
     ]
     
-    # inlcuse GeoIP features if added
+    # include GeoIP features if added
     geo_cols= [col for col in session_df.columns if col.startswith('geo_')]
     feature_cols.extend(geo_cols)
-    valid_cols= ["session_id", "src_ip", "session_start", "session_end"]+[c for c in feature_cols if c in session_df.columns]
+    # include honeypot count cols as pass-through metadata (not ML features)
+    count_cols = [c for c in session_df.columns if c.endswith('_honeypot_count')]
+    valid_cols= ["session_id", "src_ip", "session_start", "session_end"]+[c for c in feature_cols if c in session_df.columns]+count_cols
     
     features_df= session_df[valid_cols].copy()
     features_df.replace([np.inf, -np.inf], np.nan, inplace=True)

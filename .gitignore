@@ -54,3 +54,10 @@ machine-learning/data/extra data/*
 #processed
 machine-learning/data/processed/*
 machine-learning/data/features/*
+
+
+#out
+machine-learning/data/cyberlab_features/*
+machine-learning/data/cyberlab_outputs/*
+
+machine-learning/data/outputs/*

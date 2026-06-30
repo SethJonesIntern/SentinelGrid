@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-
 import pandas as pd
 
 PROFILES= [
@@ -15,223 +14,185 @@ PROFILES= [
     "Email Abuse",
     "Database Recon",
     "Database Attack",
+    "Redis Attack",
     "Automated Bot",
-    "Multi-Service Recon",
     "Low-Interaction SSH Probe",
-    "Unknown",
 ]
 
-PROFILE_MAX_SCORES= {
-    "Brute Force Attack": 3.0,
-    "Credential Stuffing": 3.0,
-    "Interactive Attacker": 4.25,
-    "Recon Scanner": 3.25,
-    "Web Scanner": 3.0,
-    "Malware Downloader": 3.0,
-    "File Exfiltration": 2.5,
-    "FTP Abuse": 2.0,
-    "Email Abuse": 2.0,
-    "Database Recon": 2.0,
-    "Database Attack": 2.5,
-    "Automated Bot": 2.0,
-    "Multi-Service Recon": 2.0,
-    "Low-Interaction SSH Probe": 2.5,
-}
-
-MIN_PROFILE_SCORE= 0.75
-MIN_PROFILE_CONFIDENCE= 0.30
-MIN_CONFIDENCE_MARGIN= 0.05
-
-
+#min confidence for low confidence
+LOW_CONFIDENCE_THRESHOLD = 0.30
 def capped(value, denominator=1.0, weight=1.0):
     if denominator<= 0:
         return 0.0
     return min(float(value)/denominator, 1.0) *weight
 
-
-def add_score(scores, reasons, profile, amount, reason=None):
-    if amount<= 0:
-        return
-    scores[profile] += amount
-    if reason:
-        reasons[profile].append(reason)
+#confidence is calculated per session
+# #confidence = sum(amounts earned) /sum(max_amounts applicable)
+def add_score(scores, max_scores, reasons, profile, amount, max_amount, reason=None):
+    max_scores[profile]+= max_amount
+    if amount> 0:
+        scores[profile]+= amount
+        if reason:
+            reasons[profile].append(reason)
 
 
 def assign_profile(row):
-    scores= {profile: 0.0 for profile in PROFILE_MAX_SCORES}
-    reasons= {profile: [] for profile in PROFILE_MAX_SCORES}
+    scores = {p: 0.0 for p in PROFILES if p != "Unknown"}
+    max_scores = {p: 0.0 for p in scores}
+    reasons = {p: [] for p in scores}
 
-    login_fail = row.get("login_fail", 0)
+    login_fail= row.get("login_fail", 0)
     unique_users = row.get("unique_users", 0)
     unique_pass = row.get("unique_pass", 0)
-    event_count = row.get("event_count", 0)
+    event_count= row.get("event_count", 0)
     cmd_count = row.get("cmd_count", 0)
     unique_cmds = row.get("unique_cmds", 0)
 
-    add_score(scores,reasons,"Brute Force Attack",
-        capped(login_fail, 20),"Many failed logins",)
-    
-    add_score(scores, reasons,"Brute Force Attack", 
-        capped(unique_pass, 20),"Many unique passwords",)
-    
-    add_score(scores,reasons, "Brute Force Attack",
-        capped(row.get("fails_per_min", 0), 20),"High failed-login rate",)
+    # brute force attack 
+    add_score(scores, max_scores, reasons, "Brute Force Attack",
+        capped(login_fail, 20), 1.0, "Many failed logins")
+    add_score(scores, max_scores, reasons, "Brute Force Attack",
+        capped(unique_pass, 20), 1.0, "Many unique passwords")
+    add_score(scores, max_scores, reasons, "Brute Force Attack",
+        capped(row.get("fails_per_min", 0), 20), 1.0, "High failed-login rate")
 
-    add_score(scores, reasons, "Credential Stuffing",
-        capped(unique_users, 10), "Many unique usernames",)
-    
-    add_score(scores,reasons,"Credential Stuffing",
-        capped(unique_pass, 10),"Many unique passwords",)
-    
-    add_score(scores, reasons,"Credential Stuffing",
-        capped(login_fail, 20), "Repeated failed logins",)
+    # credential stuffing
+    add_score(scores, max_scores, reasons, "Credential Stuffing",
+        capped(unique_users, 10), 1.0, "Many unique usernames")
+    add_score(scores, max_scores, reasons, "Credential Stuffing",
+        capped(unique_pass, 10), 1.0, "Many unique passwords")
+    add_score(scores, max_scores, reasons, "Credential Stuffing",
+        capped(login_fail, 20), 1.0, "Repeated failed logins")
 
-    add_score(scores, reasons,"Interactive Attacker",
-        capped(cmd_count, 10),"High command activity",)
-    
-    add_score(scores,reasons, "Interactive Attacker",
-        capped(unique_cmds, 5), "Multiple unique commands",)
-    
-    add_score(scores, reasons, "Interactive Attacker",
-        capped(row.get("duration", 0), 300), "Longer session duration",)
-    
-    add_score(scores,reasons, "Interactive Attacker",
-        capped(row.get("login_success", 0)), "Successful authentication",)
-    
+    #interactive attacker 
+    add_score(scores, max_scores, reasons, "Interactive Attacker",
+        capped(cmd_count, 10), 1.0, "High command activity")
+    add_score(scores, max_scores, reasons, "Interactive Attacker",
+        capped(unique_cmds, 5), 1.0, "Multiple unique commands")
+    add_score(scores, max_scores, reasons, "Interactive Attacker",
+        capped(row.get("duration", 0), 300), 1.0, "Longer session duration")
+    add_score(scores, max_scores, reasons, "Interactive Attacker",
+        capped(row.get("login_success", 0)), 1.0, "Successful authentication")
+    # Conditional: only applicable for anomalous interactive sessions
+    if row.get("is_anomaly", False) and (cmd_count > 0 or row.get("login_success", 0) > 0):
+        add_score(scores, max_scores, reasons, "Interactive Attacker",
+            0.25, 0.25, "Anomalous interactive session")
 
-    if row.get("is_anomaly", False) and (cmd_count > 0 or row.get("login_success", 0)>0):
-        add_score(scores, reasons, "Interactive Attacker",
-            0.25, "Anomalous interactive session",)
-
-    add_score(scores,reasons, "Recon Scanner",
-        capped(row.get("services_touched", 0), 4), "Multiple services touched",)
-    add_score(scores, reasons,"Recon Scanner",
-        capped(event_count, 20),"Elevated event count",)
-    
+    #recon scanner
+    add_score(scores, max_scores, reasons, "Recon Scanner",
+        capped(row.get("services_touched", 0), 4), 1.0, "Multiple services touched")
+    add_score(scores, max_scores, reasons, "Recon Scanner",
+        capped(event_count, 20), 1.0, "Elevated event count")
     if row.get("contains_recon_cmds", 0):
-        add_score(scores, reasons, "Recon Scanner", 1.0, "Recon command observed")
+        add_score(scores, max_scores, reasons, "Recon Scanner", 1.0, 1.0, "Recon command observed")
     if row.get("contains_network_terms", 0):
-        add_score(scores, reasons, "Recon Scanner", 0.5, "Network probing command observed")
+        add_score(scores, max_scores, reasons, "Recon Scanner", 0.5, 0.5, "Network probing command observed")
     if row.get("contains_nav_cmds", 0):
-        add_score(scores, reasons, "Recon Scanner", 0.25, "Filesystem navigation command observed")
+        add_score(scores, max_scores, reasons, "Recon Scanner", 0.25, 0.25, "Filesystem navigation command observed")
 
-    add_score(scores, reasons,"Web Scanner",
-        capped(row.get("http_events", 0), 10), "HTTP activity",)
-    
-    add_score(scores, reasons,"Web Scanner",
-        capped(row.get("http_page_visits", 0), 10),"HTTP page visits",)
-    
-    add_score(scores,reasons, "Web Scanner",
-        capped(row.get("http_login_attempts", 0), 10),"HTTP login attempts",)
+    # web scanner 
+    add_score(scores, max_scores, reasons, "Web Scanner",
+        capped(row.get("http_events", 0), 10), 1.0, "HTTP activity")
+    add_score(scores, max_scores, reasons, "Web Scanner",
+        capped(row.get("http_page_visits", 0), 10), 1.0, "HTTP page visits")
+    add_score(scores, max_scores, reasons, "Web Scanner",
+        capped(row.get("http_login_attempts", 0), 10), 1.0, "HTTP login attempts")
 
-    add_score(scores, reasons, "Malware Downloader",
-        capped(row.get("downloads", 0)),"File download observed",)
-    
-    add_score(scores, reasons, "Malware Downloader",
-        capped(row.get("download_ratio", 0)), "Download-heavy session",)
-    
+    #malware downloader
+    add_score(scores, max_scores, reasons, "Malware Downloader",
+        capped(row.get("downloads", 0)), 1.0, "File download observed")
+    add_score(scores, max_scores, reasons, "Malware Downloader",
+        capped(row.get("download_ratio", 0)), 1.0, "Download-heavy session")
     if row.get("contains_install_cmds", 0):
-        add_score(scores, reasons, "Malware Downloader", 1.0, "Install/download command observed")
+        add_score(scores, max_scores, reasons, "Malware Downloader", 1.0, 1.0, "Install/download command observed")
     if row.get("contains_exec_terms", 0) and row.get("downloads", 0) > 0:
-        add_score(scores, reasons, "Malware Downloader", 0.5, "Downloaded file may have been executed")
+        add_score(scores, max_scores, reasons, "Malware Downloader", 0.5, 0.5, "Downloaded file may have been executed")
 
-    add_score(scores, reasons,"File Exfiltration",
-        capped(row.get("uploads", 0)),"File upload observed",)
-    
-    add_score(scores, reasons,"File Exfiltration",
-        capped(row.get("upload_ratio", 0)), "Upload-heavy session",)
-    
-    add_score(scores,reasons,"File Exfiltration",
-        capped(row.get("file_transfer_ratio", 0), 0.5, 0.5),"High file-transfer share",  )
+    # file xxfiltration
+    add_score(scores, max_scores, reasons, "File Exfiltration",
+        capped(row.get("uploads", 0)), 1.0, "File upload observed")
+    add_score(scores, max_scores, reasons, "File Exfiltration",
+        capped(row.get("upload_ratio", 0)), 1.0, "Upload-heavy session")
+    add_score(scores, max_scores, reasons, "File Exfiltration",
+        capped(row.get("file_transfer_ratio", 0), 0.5, 0.5), 0.5, "High file-transfer share")
 
-    add_score(scores,reasons,"FTP Abuse",
-        capped(row.get("ftp_events", 0), 5),"FTP activity",)
-    
-    add_score(scores, reasons, "FTP Abuse",
-        capped(row.get("ftp_ratio", 0)),"FTP-dominant session",)
+    #ftp abuse 
+    add_score(scores, max_scores, reasons, "FTP Abuse",
+        capped(row.get("ftp_events", 0), 5), 1.0, "FTP activity")
+    add_score(scores, max_scores, reasons, "FTP Abuse",
+        capped(row.get("ftp_ratio", 0)), 1.0, "FTP-dominant session")
+    add_score(scores, max_scores, reasons, "FTP Abuse",
+        capped(row.get("ftp_connects", 0), 5), 1.0, "FTP connection attempts")
+    if row.get("ftp_connects", 0) > 0 and row.get("ftp_disconnects", 0) > 0:
+        churn = row.get("ftp_connects", 0) / max(row.get("ftp_disconnects", 1), 1)
+        add_score(scores, max_scores, reasons, "FTP Abuse",
+            min(churn / 5.0, 1.0) * 0.5, 0.5, "High FTP connection churn")
 
-    add_score(scores, reasons,"Email Abuse",
-        capped(row.get("smtp_events", 0), 5),"SMTP activity",)
-    
-    add_score(scores,reasons, "Email Abuse",
-        capped(row.get("smtp_ratio", 0)),"SMTP-dominant session",)
+    #email abuse 
+    add_score(scores, max_scores, reasons, "Email Abuse",
+        capped(row.get("smtp_events", 0), 5), 1.0, "SMTP activity")
+    add_score(scores, max_scores, reasons, "Email Abuse",
+        capped(row.get("smtp_ratio", 0)), 1.0, "SMTP-dominant session")
+    add_score(scores, max_scores, reasons, "Email Abuse",
+        capped(row.get("smtp_connects", 0), 5), 1.0, "SMTP connection attempts")
+    add_score(scores, max_scores, reasons, "Email Abuse",
+        capped(row.get("smtp_ehlo_count", 0), 5), 1.0, "SMTP EHLO probing")
 
-    add_score(scores, reasons,"Database Recon",
-        capped(row.get("mysql_events", 0), 5),"MySQL activity",)
-    
-    add_score(scores, reasons, "Database Recon",
-        capped(row.get("redis_events", 0), 5), "Redis activity",)
+    # database recon 
+    add_score(scores, max_scores, reasons, "Database Recon",
+        capped(row.get("mysql_events", 0), 5), 1.0, "MySQL activity")
 
-    add_score(scores, reasons, "Database Attack",
-        capped(row.get("mysql_queries", 0), 10),"MySQL queries",)
-    
-    add_score(scores,reasons, "Database Attack",
-        capped(row.get("redis_commands", 0), 10),"Redis commands",)
-    
-    if row.get("is_anomaly", False) and (row.get("mysql_queries", 0)>0 or row.get("redis_commands", 0) > 0):
-        add_score(scores, reasons, "Database Attack", 0.5, "Anomalous database activity")
+    #database attack 
+    add_score(scores, max_scores, reasons, "Database Attack",
+        capped(row.get("mysql_queries", 0), 10), 1.0, "MySQL queries")
+    if row.get("is_anomaly", False) and row.get("mysql_queries", 0) > 0:
+        add_score(scores, max_scores, reasons, "Database Attack", 0.5, 0.5, "Anomalous MySQL activity")
 
+    # redis attack 
+    add_score(scores, max_scores, reasons, "Redis Attack",
+        capped(row.get("redis_events", 0), 5), 1.0, "Redis activity")
+    add_score(scores, max_scores, reasons, "Redis Attack",
+        capped(row.get("redis_commands", 0), 10), 1.0, "Redis commands")
+    add_score(scores, max_scores, reasons, "Redis Attack",
+        capped(row.get("redis_ratio", 0)), 1.0, "Redis-dominant session")
+    if row.get("is_anomaly", False) and row.get("redis_commands", 0) > 0:
+        add_score(scores, max_scores, reasons, "Redis Attack", 0.5, 0.5, "Anomalous Redis activity")
+
+    #automated bot
     if event_count>= 10:
-        add_score(scores,reasons, "Automated Bot",
-            capped(row.get("events_per_min", 0), 100), "High event rate",)
-        
-    if cmd_count>= 5:
-        add_score(scores,reasons, "Automated Bot",
-            capped(row.get("cmds_per_min", 0), 20),"High command rate",)
+        add_score(scores, max_scores, reasons, "Automated Bot",
+            capped(row.get("events_per_min", 0), 100), 1.0, "High event rate")
+    if cmd_count >= 5:
+        add_score(scores, max_scores, reasons, "Automated Bot",
+            capped(row.get("cmds_per_min", 0), 20), 1.0, "High command rate")
 
-    add_score(scores, reasons,"Multi-Service Recon",
-        capped(row.get("services_touched", 0), 4), "Multiple services touched",)
-    
-    add_score(scores, reasons, "Multi-Service Recon",
-        capped(row.get("unique_event_types", 0), 10),"Many event types",)
+    # low interaction ssh 
+    if row.get("ssh_events", 0)> 0:
+        add_score(scores, max_scores, reasons, "Low-Interaction SSH Probe",
+            capped(row.get("ssh_ratio", 0)), 1.0, "SSH-dominant session")
+        if row.get("login_success", 0) > 0 and cmd_count == 0:
+            add_score(scores, max_scores, reasons, "Low-Interaction SSH Probe",
+                0.75, 0.75, "Successful login without commands")
+        if event_count<= 5 and cmd_count == 0:
+            add_score(scores, max_scores, reasons, "Low-Interaction SSH Probe",
+                0.5, 0.5, "Short low-activity session")
+        if row.get("unique_event_types", 0)<= 4 and cmd_count == 0:
+            add_score(scores, max_scores, reasons, "Low-Interaction SSH Probe",
+                0.25, 0.25, "Few event types")
 
-    if row.get("ssh_events", 0) > 0:
-        add_score(scores, reasons, "Low-Interaction SSH Probe",
-            capped(row.get("ssh_ratio", 0)), "SSH-dominant session",)
-
-    if row.get("login_success", 0) > 0 and cmd_count == 0:
-        add_score(scores, reasons, "Low-Interaction SSH Probe",
-            0.75, "Successful login without commands",)
-
-    if event_count <= 5 and cmd_count == 0:
-        add_score(scores, reasons, "Low-Interaction SSH Probe",
-            0.5, "Short low-activity session",)
-
-    if row.get("unique_event_types", 0) <= 4 and cmd_count == 0:
-        add_score(scores, reasons, "Low-Interaction SSH Probe",
-            0.25, "Few event types",)
-
-    profile_scores={
-        profile: round(scores[profile]/ PROFILE_MAX_SCORES[profile], 3)
-        for profile in scores
-    }
+    #normalization confidence = score / session_max
+    profile_scores= {p: round(scores[p] / max_scores[p], 3) if max_scores[p] > 0 else 0.0
+        for p in scores}
 
     ranked= sorted(profile_scores.items(), key=lambda item: item[1], reverse=True)
     top_profile, top_confidence = ranked[0]
-    second_confidence = ranked[1][1] if len(ranked)> 1 else 0.0
-    top_raw_score = scores[top_profile]
-
-    if top_raw_score< MIN_PROFILE_SCORE or top_confidence < MIN_PROFILE_CONFIDENCE:
-        return(
-            "Unknown",
-            round(top_confidence, 3),
-            {**profile_scores, "Unknown": round(1.0- top_confidence, 3)},
-            ["Low-confidence evidence"],
-        )
-
-    if top_confidence- second_confidence <MIN_CONFIDENCE_MARGIN:
-        return(
-            "Unknown",
-            round(top_confidence, 3),
-            {**profile_scores, "Unknown": round(1.0 - top_confidence, 3)},
-            ["Ambiguous evidence between multiple profiles"],
-        )
+    top_reasons = reasons[top_profile][:3] if reasons[top_profile] else ["Low-confidence evidence"]
 
     return(
         top_profile,
         round(top_confidence, 3),
         {**profile_scores, "Unknown": round(1.0 - top_confidence, 3)},
-        reasons[top_profile][:3],
+        top_reasons,
     )
 
 
