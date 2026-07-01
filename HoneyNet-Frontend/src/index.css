@@ -161,6 +161,63 @@ input:focus, select:focus {
 }
 
 /* =====================================================================
+   REDISTRIBUTE BUTTON
+   Raised 3D press effect: a solid "edge" offset beneath the face plus an
+   ambient glow simulates extrusion; pressing collapses the edge and drops
+   the face down onto it. Idle pulse only runs while actually clickable,
+   so it never implies the button works while disabled/on cooldown.
+   ===================================================================== */
+.redistribute-btn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: 1px solid rgba(99,165,255,0.4);
+  background: linear-gradient(135deg, #3b82f6, #0e7490);
+  color: #f0f7ff;
+  font-weight: 800;
+  font-size: 13px;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 4px 0 rgba(13,52,140,0.9),
+    0 8px 20px rgba(59,130,246,0.35);
+  transform: translateY(0);
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 120ms ease, opacity 120ms ease;
+}
+
+.redistribute-btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow:
+    0 4px 0 rgba(13,52,140,0.9),
+    0 10px 26px rgba(59,130,246,0.5);
+}
+
+.redistribute-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 rgba(13,52,140,0.9),
+    0 4px 12px rgba(59,130,246,0.3);
+}
+
+.redistribute-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+  filter: none;
+  animation: none;
+  box-shadow:
+    0 4px 0 rgba(13,52,140,0.5),
+    0 6px 14px rgba(59,130,246,0.18);
+}
+
+@keyframes redistributePulse {
+  0%, 100% { box-shadow: 0 4px 0 rgba(13,52,140,0.9), 0 8px 20px rgba(59,130,246,0.35); }
+  50%      { box-shadow: 0 4px 0 rgba(13,52,140,0.9), 0 8px 30px rgba(59,130,246,0.6); }
+}
+
+.redistribute-btn:not(:disabled) {
+  animation: redistributePulse 2.4s ease-in-out infinite;
+}
+
+/* =====================================================================
    TABLE ROWS
    Row hover with no JS — pure CSS transition.
    Using transform on the row itself means the browser doesn't repaint

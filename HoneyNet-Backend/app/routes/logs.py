@@ -24,6 +24,7 @@ def get_sessions(db: Session = Depends(get_db), limit: int = 1000000):
                 "id": r.id,
                 "raw_json": r.raw_json,
                 "created_at": r.created_at,
+                "active_honeypot_count": r.active_honeypot_count,
             }
             for r in rows
         ],

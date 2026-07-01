@@ -25,6 +25,20 @@ SentinelGrid is a cybersecurity analytics platform designed to capture, analyze,
 - **Yama – ML & Threat Analysis Engineer**  
   Designs feature extraction pipelines, implements clustering and anomaly detection models, and evaluates attack patterns.
 
+## File Structure
+### File Structure 
+```
+SENTINELGRID/
+│
+├── documentation/
+├── HoneyNet-Backend/
+├── HoneyNet-Frontend/
+├── machine-learning/
+│
+├── .gitignore
+└──README.md
+
+```
 
 ## Documentation
 - `documentation/minutes.tex` : All Scrum and meeting minutes are updated and stored here. This file is updated after every meeting and tracks the team's Scrum activities such as sprint planning and reviews. 

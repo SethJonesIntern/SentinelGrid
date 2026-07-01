@@ -1,33 +1,45 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
 import { formatTimestamp, getCommandText, timeAgo } from "../lib/telemetry";
+
+const POLL_MS_KEY = "sg_livefeed_poll_ms";
 
 export default function LiveFeedPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(100);
-  const [pollMs, setPollMs] = useState(10000);
+  const [pollMs, setPollMs] = useState<number>(() => {
+    const stored = localStorage.getItem(POLL_MS_KEY);
+    return stored ? Number(stored) : 10000;
+  });
   const [autoRefresh, setAutoRefresh] = useState(true);
+
+  useEffect(() => { localStorage.setItem(POLL_MS_KEY, String(pollMs)); }, [pollMs]);
   const [ipFilter, setIpFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sidFilter, setSidFilter] = useState("");
   const [page, setPage] = useState(0);
+  const loadGen = useRef(0);
 
-  async function load() {
+  async function load(resetPage = false) {
+    const gen = ++loadGen.current;
     try {
       setErr("");
       const res = await api.logs(limit);
+      if (gen !== loadGen.current) return;
       setLogs(res.logs);
+      if (resetPage) setPage(0);
     } catch (e) {
+      if (gen !== loadGen.current) return;
       setErr((e as Error).message);
     } finally {
-      setLoading(false);
+      if (gen === loadGen.current) setLoading(false);
     }
   }
 
-  useEffect(() => { void load(); }, [limit]);
+  useEffect(() => { void load(true); }, [limit]);
   useEffect(() => { setPage(0); }, [ipFilter, typeFilter, sidFilter, limit]);
 
   useEffect(() => {
@@ -40,12 +52,21 @@ export default function LiveFeedPage() {
 
   const PAGE_SIZE = 50;
 
-  const filtered = useMemo(() => logs.filter((l) => {
-    const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
-    const okType = typeFilter ? l.raw_json.event_type.includes(typeFilter.trim()) : true;
-    const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
-    return okIp && okType && okSid;
-  }), [logs, ipFilter, typeFilter, sidFilter]);
+  const filtered = useMemo(() => logs
+    .filter((l) => {
+      const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
+      const okType = typeFilter ? l.raw_json.event_type.includes(typeFilter.trim()) : true;
+      const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
+      return okIp && okType && okSid;
+    })
+    .sort((a, b) => {
+      const ts = (row: typeof a) => {
+        const t = new Date(row.raw_json.timestamp ?? "").getTime();
+        return isNaN(t) ? row.id : t;
+      };
+      return ts(b) - ts(a);
+    }),
+  [logs, ipFilter, typeFilter, sidFilter]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const pageFiltered = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -74,21 +95,27 @@ export default function LiveFeedPage() {
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
           <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
           <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
-          <input
-            type="number" min={50} max={1000} value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            style={{ ...inputStyle, width: 90 }}
-          />
-          <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={inputStyle}>
-            <option value={5000}>5s</option>
-            <option value={10000}>10s</option>
-            <option value={30000}>30s</option>
-            <option value={60000}>60s</option>
-          </select>
+          <label style={fieldLabel} title="Number of most-recent events to fetch (50–1000)">
+            Limit
+            <input
+              type="number" min={50} max={1000} value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              style={{ ...inputStyle, width: 90 }}
+            />
+          </label>
+          <label style={fieldLabel} title="How often to auto-refresh the feed">
+            Refresh every
+            <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={inputStyle}>
+              <option value={5000} style={optionStyle}>5s</option>
+              <option value={10000} style={optionStyle}>10s</option>
+              <option value={30000} style={optionStyle}>30s</option>
+              <option value={60000} style={optionStyle}>60s</option>
+            </select>
+          </label>
           <button onClick={() => setAutoRefresh((v) => !v)} style={autoRefresh ? btnDanger : btn}>
             {autoRefresh ? "Pause" : "Resume"}
           </button>
-          <button onClick={() => void load()} style={btn}>Refresh</button>
+          <button onClick={() => void load(true)} style={btn}>Refresh</button>
         </div>
 
         {err && <div style={{ ...subtle, color: "#f87171", marginTop: 10 }}>{err}</div>}
@@ -98,7 +125,7 @@ export default function LiveFeedPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <MiniStat label="Total Fetched" value={String(logs.length)} accent="#3b82f6" />
         <MiniStat label="Filtered Events" value={String(filtered.length)} accent="#22d3ee" />
-        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip)).size)} accent="#f87171" />
+        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip).filter(Boolean)).size)} accent="#f87171" />
         <MiniStat label="Poll Interval" value={autoRefresh ? `${pollMs / 1000}s` : "Paused"} accent="#34d399" />
       </div>
 
@@ -189,7 +216,7 @@ const sectionLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, lette
 const subtle: React.CSSProperties = { color: "#6b7a99", fontSize: 12 };
 
 const topRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" };
-const filtersRow: React.CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16, alignItems: "center" };
+const filtersRow: React.CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16, alignItems: "flex-end" };
 
 const inputStyle: React.CSSProperties = {
   minWidth: 160,
@@ -201,6 +228,25 @@ const inputStyle: React.CSSProperties = {
   fontSize: 12,
   fontFamily: "'Space Mono', monospace",
   outline: "none",
+  colorScheme: "dark",
+};
+
+const optionStyle: React.CSSProperties = {
+  background: "#0a1024",
+  color: "#e2e8f4",
+};
+
+const fieldLabel: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 5,
+  fontSize: 10,
+  color: "#6b7a99",
+  fontFamily: "'Space Mono', monospace",
+  whiteSpace: "nowrap",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
 };
 
 const btn: React.CSSProperties = {

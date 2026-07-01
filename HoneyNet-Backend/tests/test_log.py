@@ -123,3 +123,39 @@ def test_log_stores_canonical_iso_timestamp(client, db_session, valid_event_payl
 
     row = db_session.query(RawLog).filter(RawLog.id == response.json()["id"]).one()
     assert row.raw_json["timestamp"] == "2026-04-18T12:00:00+00:00"
+
+
+def test_log_captures_active_honeypot_count(client, db_session):
+    from app.services.honeynet_state import honeynet_state
+
+    original = honeynet_state.counts()
+    try:
+        honeynet_state.set_counts({"ssh": 3})
+        payload = {
+            "timestamp": "2026-04-18T12:00:00+00:00",
+            "source_ip": "10.0.0.7",
+            "event_type": "ssh.login.attempt",  # prefix resolves to type "ssh"
+        }
+        response = client.post("/log", json=payload)
+        assert response.status_code == 200
+        assert response.json()["active_honeypot_count"] == 3
+
+        row = db_session.query(RawLog).filter(RawLog.id == response.json()["id"]).one()
+        assert row.active_honeypot_count == 3
+    finally:
+        honeynet_state.set_counts(original)
+
+
+def test_log_active_count_defaults_to_one_for_unknown_type(client, db_session):
+    payload = {
+        "timestamp": "2026-04-18T12:00:00+00:00",
+        "source_ip": "10.0.0.8",
+        "event_type": "port_scan",  # not a known honeypot type
+    }
+    response = client.post("/log", json=payload)
+    assert response.status_code == 200
+    # NOT NULL column falls back to 1 when the type can't be resolved.
+    assert response.json()["active_honeypot_count"] == 1
+
+    row = db_session.query(RawLog).filter(RawLog.id == response.json()["id"]).one()
+    assert row.active_honeypot_count == 1

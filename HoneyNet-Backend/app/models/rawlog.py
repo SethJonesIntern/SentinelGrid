@@ -11,3 +11,8 @@ class RawLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     raw_json = Column(JSONB, nullable=False)
+
+    # How many honeypots of this event's type were running when it was logged,
+    # captured from the honeynet state at ingest. Pre-existing column (NOT NULL,
+    # defaults to 1 — historically there was one honeypot of each type).
+    active_honeypot_count = Column(Integer, nullable=False, server_default="1")

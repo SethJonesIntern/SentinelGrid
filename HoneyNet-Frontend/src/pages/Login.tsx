@@ -1,23 +1,30 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getUser, login } from "../lib/auth";
 
 export default function LoginPage() {
   const nav = useNavigate();
-  const [username, setUsername] = useState("student");
-  const [password, setPassword] = useState("password");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (getUser()) nav("/dashboard");
   }, [nav]);
 
-  function handleLogin() {
+  async function handleLogin() {
+    if (!username.trim() || !password) { setError("Username and password are required"); return; }
+    setError("");
     setLoading(true);
-    setTimeout(() => {
-      login(username.trim());
+    try {
+      await login(username.trim(), password);
       nav("/dashboard");
-    }, 600);
+    } catch (e) {
+      setError((e as Error).message || "Invalid username or password");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -86,6 +93,7 @@ export default function LoginPage() {
             <div style={label}>Username</div>
             <input
               style={inputStyle}
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -104,6 +112,20 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+
+          {error && (
+            <div style={{
+              padding: "9px 12px",
+              borderRadius: 8,
+              background: "rgba(248,113,113,0.08)",
+              border: "1px solid rgba(248,113,113,0.25)",
+              color: "#f87171",
+              fontSize: 12,
+              fontFamily: "'Space Mono', monospace"
+            }}>
+              {error}
+            </div>
+          )}
 
           <button
             onClick={handleLogin}
@@ -128,8 +150,13 @@ export default function LoginPage() {
             {loading ? "AUTHENTICATING..." : "ACCESS SYSTEM"}
           </button>
 
-          <div style={{ textAlign: "center", fontSize: 11, color: "#2a3a52", letterSpacing: "0.04em" }}>
-            Demo credentials pre-filled
+          
+
+          <div style={{ textAlign: "center", fontSize: 12, color: "#3d5278" }}>
+            Don't have an account?{" "}
+            <Link to="/signup" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 700 }}>
+              Sign up
+            </Link>
           </div>
         </div>
       </div>
