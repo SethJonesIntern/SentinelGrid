@@ -1,0 +1,138 @@
+# SentinelGrid Honeynet  v4 — ClarityMed Health Systems
+# Deploy: cd /opt/sentinelgrid && bash deploy.sh
+# Logs:   docker logs sg-forwarder -f
+#
+# Variable count per type (distinct ports):
+#   The five scalable honeypots (ssh, http, mysql, smtp, redis) have NO
+#   container_name and publish a host port RANGE instead of a single port, so
+#   the DO agent can `docker compose up -d --scale <svc>=N` and compose hands
+#   each replica its own distinct host port from the range. The first replica
+#   lands on the original well-known port (e.g. :25, :6380); extras climb the
+#   range. Ranges hold 10 each (backend caps a single type at 1 base + 6
+#   distributable = 7).
+#
+#   FTP is the exception: its passive-data ports (60000-60100) must map 1:1
+#   host<->container, which leaves no room for per-replica host ports, so it
+#   keeps a fixed name + fixed ports and stays a single instance.
+
+networks:
+  sentinelgrid-net:
+    external: true
+
+volumes:
+  sg-logs:
+    driver: local
+  sg-cowrie-logs:
+    driver: local
+  sg-forwarder-state:
+    driver: local
+
+services:
+
+  sg-ssh-01:
+    image: cowrie/cowrie:latest
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "2222-2231:2222"
+    volumes:
+      - sg-cowrie-logs:/cowrie/cowrie-git/var/log/cowrie
+    environment:
+      - COWRIE_HOSTNAME=claritymed-app01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-http-01:
+    image: sg-http-honeypot:latest
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "8080-8089:80"
+    volumes:
+      - sg-logs:/var/log/honeypot
+    environment:
+      - SENSOR_ID=sg-http-01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-ftp-01:
+    image: sg-ftp-honeypot:latest
+    container_name: sg-ftp-01
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "21:21"
+      - "60000-60100:60000-60100"
+    volumes:
+      - sg-logs:/var/log/honeypot
+    environment:
+      - SENSOR_ID=sg-ftp-01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-mysql-01:
+    image: sg-mysql-honeypot:latest
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "3307-3316:3306"
+    volumes:
+      - sg-logs:/var/log/honeypot
+    environment:
+      - SENSOR_ID=sg-mysql-01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-smtp-01:
+    image: sg-smtp-honeypot:latest
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "25-34:25"
+    volumes:
+      - sg-logs:/var/log/honeypot
+    environment:
+      - SENSOR_ID=sg-smtp-01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-redis-01:
+    image: sg-redis-honeypot:latest
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    ports:
+      - "6380-6389:6379"
+    volumes:
+      - sg-logs:/var/log/honeypot
+    environment:
+      - SENSOR_ID=sg-redis-01
+    logging:
+      driver: json-file
+      options: { max-size: "50m", max-file: "3" }
+
+  sg-forwarder:
+    image: python:3.11-slim
+    container_name: sg-forwarder
+    restart: unless-stopped
+    networks: [sentinelgrid-net]
+    volumes:
+      - sg-logs:/logs
+      - sg-cowrie-logs:/logs/cowrie
+      - sg-forwarder-state:/var/lib/sg-forwarder
+      - ./forwarder:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install requests --quiet --no-cache-dir && python forward_logs.py"
+    environment:
+      - API_URL=https://uddiejez3g.us-east-1.awsapprunner.com/log
+      - SENSOR_ID=sg-claritymed-01
+      - BATCH_SIZE=20
+      - HEARTBEAT_INT=60
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "2" }
