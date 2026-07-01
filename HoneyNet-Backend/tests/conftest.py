@@ -2,6 +2,9 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["AGENT_TOKEN"] = "test-agent-token"
+# Point the ML plan at a path that doesn't exist so predict_distribution() uses
+# its uniform fallback by default; tests that exercise the plan set this per-test.
+os.environ["ML_PLAN_PATH"] = os.path.join(os.path.dirname(__file__), "_no_ml_plan.json")
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.compiler import compiles

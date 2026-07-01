@@ -5,9 +5,13 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/honeynet-agent
-EnvironmentFile=/opt/honeynet-agent/config.env
-ExecStart=/usr/bin/python3 /opt/honeynet-agent/agent.py
+# The agent runs from the sentinelgrid root so its relative COMPOSE_FILE
+# (docker-compose/sentinelgrid-honeypots.yml) and the forwarder's ./forwarder
+# mount resolve. Deploy agent.py + config.env into /opt/sentinelgrid alongside
+# the docker-compose/ directory.
+WorkingDirectory=/opt/sentinelgrid
+EnvironmentFile=/opt/sentinelgrid/config.env
+ExecStart=/usr/bin/python3 /opt/sentinelgrid/agent.py
 Restart=always
 RestartSec=5
 

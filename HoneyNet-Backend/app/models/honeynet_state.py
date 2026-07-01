@@ -12,11 +12,11 @@ class HoneypotCount(Base):
     container restarts (App Runner replaces the container on every deploy, which
     wipes in-memory state).
 
-    NOTE: deliberately NOT imported in `app/models/__init__.py` yet, so
-    `Base.metadata.create_all` on startup will NOT create this table in the
-    shared hosted DB until we choose to. Before enabling the DB store, either
-    register it there or create the `honeynet_state` table explicitly (and give
-    the team a heads-up — it's a shared database).
+    Registered in `app/models/__init__.py` and created in the shared DB via
+    `migrations/create_honeynet_state.py` (seeded with one row per type at
+    count 1). The live `honeynet_state` singleton does not use this table yet —
+    to activate persistence, construct it with
+    `HoneynetState(store=DbHoneynetStore())` in honeynet_state.py.
     """
 
     __tablename__ = "honeynet_state"

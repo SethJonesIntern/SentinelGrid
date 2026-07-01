@@ -32,6 +32,12 @@ __pycache__/
 # python test cache
 .pytest_cache/
 
+# sg-v4
+HoneyNet-Backend/sg-v4/
+
+# real agent config (holds the live AGENT_TOKEN); keep only config.example.env in git
+**/config.env
+
 # Model weights and checkpoints (all depths)
 *.pt
 *.pth
@@ -47,3 +53,17 @@ machine-learning/data/Kaggle CIC-IDS-2017/*
 # Cowrie Honeypot Dataset
 machine-learning/data/Zenodo Honeypot Data/*
 !machine-learning/data/Zenodo Honeypot Data/.gitkeep
+
+#extra data
+machine-learning/data/extra data/*
+
+#processed
+machine-learning/data/processed/*
+machine-learning/data/features/*
+
+
+#out
+machine-learning/data/cyberlab_features/*
+machine-learning/data/cyberlab_outputs/*
+
+machine-learning/data/outputs/*

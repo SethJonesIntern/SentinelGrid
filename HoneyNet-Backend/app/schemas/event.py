@@ -11,5 +11,10 @@ class HoneypotEvent(BaseModel):
     session_id: Optional[str] = None
     sensor_id: Optional[str] = None
 
+    # Honeypot type this event came from (e.g. "ssh", "http"). The forwarder
+    # sends it; if absent we fall back to the event_type prefix. See
+    # normalize_event.resolve_honeypot_type.
+    honeypot_type: Optional[str] = None
+
     # optional flexible payload
     data: Optional[Dict[str, Any]] = None

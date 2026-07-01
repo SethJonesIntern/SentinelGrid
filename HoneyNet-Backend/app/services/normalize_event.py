@@ -1,8 +1,23 @@
 # app/services/normalize_event.py
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.schemas.event import HoneypotEvent
+from app.services.ml_model import HONEYPOT_TYPES
 import hashlib
+
+
+def resolve_honeypot_type(event: HoneypotEvent) -> Optional[str]:
+    """
+    Determine which honeypot type an event belongs to (e.g. "ssh", "http").
+
+    Prefers the explicit ``honeypot_type`` the forwarder sends; otherwise falls
+    back to the prefix of ``event_type`` (events are named "<type>.<...>", e.g.
+    "http.login.attempt"). Returns the type only if it's one we track, else
+    None — so callers don't store a count against an unknown/garbage key.
+    """
+    candidate = event.honeypot_type or event.event_type.split(".")[0]
+    candidate = candidate.strip().lower()
+    return candidate if candidate in HONEYPOT_TYPES else None
 
 
 def generate_session_id(src_ip: str, event_type: str, timestamp) -> str:

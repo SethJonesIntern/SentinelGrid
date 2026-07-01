@@ -1,0 +1,10 @@
+#im using python 3.11.4
+numpy==2.4.2
+# pandas 3.x made fillna strict about dtypes, which breaks feature_engineering's
+# blanket fillna(0) over a datetime column; pin to 2.x.
+pandas==2.3.3
+scikit-learn==1.8.0
+matplotlib==3.10.8
+geoip2
+seaborn
+requests
