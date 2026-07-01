@@ -23,6 +23,10 @@ ports, so it stays a single instance (see SINGLE_INSTANCE_TYPES) and we cap its
 target at 1, warning if the backend asks for more.
 """
 
+# Make type annotations lazy so modern syntax (dict | None, list[str]) works on
+# older droplet Python (3.8/3.9), not just 3.10+.
+from __future__ import annotations
+
 import json
 import os
 import subprocess
