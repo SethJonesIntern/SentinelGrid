@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
 import { formatTimestamp, getCommandText, timeAgo } from "../lib/telemetry";
@@ -21,20 +21,25 @@ export default function LiveFeedPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [sidFilter, setSidFilter] = useState("");
   const [page, setPage] = useState(0);
+  const loadGen = useRef(0);
 
-  async function load() {
+  async function load(resetPage = false) {
+    const gen = ++loadGen.current;
     try {
       setErr("");
       const res = await api.logs(limit);
+      if (gen !== loadGen.current) return;
       setLogs(res.logs);
+      if (resetPage) setPage(0);
     } catch (e) {
+      if (gen !== loadGen.current) return;
       setErr((e as Error).message);
     } finally {
-      setLoading(false);
+      if (gen === loadGen.current) setLoading(false);
     }
   }
 
-  useEffect(() => { void load(); }, [limit]);
+  useEffect(() => { void load(true); }, [limit]);
   useEffect(() => { setPage(0); }, [ipFilter, typeFilter, sidFilter, limit]);
 
   useEffect(() => {
@@ -47,12 +52,21 @@ export default function LiveFeedPage() {
 
   const PAGE_SIZE = 50;
 
-  const filtered = useMemo(() => logs.filter((l) => {
-    const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
-    const okType = typeFilter ? l.raw_json.event_type.includes(typeFilter.trim()) : true;
-    const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
-    return okIp && okType && okSid;
-  }), [logs, ipFilter, typeFilter, sidFilter]);
+  const filtered = useMemo(() => logs
+    .filter((l) => {
+      const okIp = ipFilter ? l.raw_json.src_ip.includes(ipFilter.trim()) : true;
+      const okType = typeFilter ? l.raw_json.event_type.includes(typeFilter.trim()) : true;
+      const okSid = sidFilter ? l.raw_json.session_id.includes(sidFilter.trim()) : true;
+      return okIp && okType && okSid;
+    })
+    .sort((a, b) => {
+      const ts = (row: typeof a) => {
+        const t = new Date(row.raw_json.timestamp ?? "").getTime();
+        return isNaN(t) ? row.id : t;
+      };
+      return ts(b) - ts(a);
+    }),
+  [logs, ipFilter, typeFilter, sidFilter]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const pageFiltered = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -101,7 +115,7 @@ export default function LiveFeedPage() {
           <button onClick={() => setAutoRefresh((v) => !v)} style={autoRefresh ? btnDanger : btn}>
             {autoRefresh ? "Pause" : "Resume"}
           </button>
-          <button onClick={() => void load()} style={btn}>Refresh</button>
+          <button onClick={() => void load(true)} style={btn}>Refresh</button>
         </div>
 
         {err && <div style={{ ...subtle, color: "#f87171", marginTop: 10 }}>{err}</div>}
@@ -111,7 +125,7 @@ export default function LiveFeedPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <MiniStat label="Total Fetched" value={String(logs.length)} accent="#3b82f6" />
         <MiniStat label="Filtered Events" value={String(filtered.length)} accent="#22d3ee" />
-        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip)).size)} accent="#f87171" />
+        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip).filter(Boolean)).size)} accent="#f87171" />
         <MiniStat label="Poll Interval" value={autoRefresh ? `${pollMs / 1000}s` : "Paused"} accent="#34d399" />
       </div>
 

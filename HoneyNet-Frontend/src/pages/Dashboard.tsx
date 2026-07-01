@@ -86,7 +86,7 @@ export default function DashboardPage() {
       <div style={statsGrid}>
         <StatCard label="Events Loaded" value={String(logs.length)} accent="#3b82f6" />
         <StatCard label="Unique Sessions" value={String(sessions.length)} accent="#22d3ee" />
-        <StatCard label="Source IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip)).size)} accent="#f87171" />
+        <StatCard label="Source IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip).filter(Boolean)).size)} accent="#f87171" />
         <StatCard label="Polling" value={autoRefresh ? `${pollMs / 1000}s` : "Paused"} accent="#34d399" />
       </div>
 

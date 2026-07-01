@@ -81,7 +81,7 @@ export default function SessionsPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <MiniStat label="Total Sessions" value={String(sessions.length)} accent="#3b82f6" />
         <MiniStat label="Events Loaded" value={String(logs.length)} accent="#22d3ee" />
-        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip)).size)} accent="#f87171" />
+        <MiniStat label="Unique IPs" value={String(new Set(logs.map(l => l.raw_json.src_ip).filter(Boolean)).size)} accent="#f87171" />
         <MiniStat label="Fetch Limit" value={String(limit)} accent="#fbbf24" />
       </div>
 
