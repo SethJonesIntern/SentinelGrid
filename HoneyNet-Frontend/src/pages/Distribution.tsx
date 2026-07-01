@@ -6,10 +6,7 @@ import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
 import { buildHoneypotDistribution } from "../lib/telemetry";
 
-// Cowrie/SSH volume is high enough to bury low-traffic honeypot types (HTTP, FTP,
-// SMTP, MySQL, Redis) within the first ~1-30k most-recent rows, so this page needs
-// a much wider window than other pages to actually see them. GET /logs has no
-// offset/aggregation, so a bigger `limit` is the only lever available here.
+
 const FETCH_LIMIT = 50000;
 
 const TYPE_COLORS: Record<string, string> = {
@@ -22,7 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
   Other: "#6b7a99"
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function DarkTooltip(props: any) {
   const active: boolean | undefined = props.active;
   const payload: Array<{ name?: unknown; value?: unknown; color?: string; fill?: string }> | undefined = props.payload;
@@ -119,7 +116,7 @@ export default function DistributionPage() {
           )}
         </div>
 
-        {/* Donut — proportions */}
+        {/* proportions */}
         <div style={panel}>
           <div style={{ marginBottom: 14 }}>
             <div style={cardTitle}>Distribution Share</div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ResponsiveContainer, PieChart, Pie, Tooltip } from "recharts";
 import { api } from "../lib/api";
 import { HONEYPOT_TYPES, TYPE_COLORS, TYPE_LABELS } from "../lib/honeynet";
+import RaceBarChart from "../components/RaceBarChart";
 
 const COOLDOWN_MS = 10 * 60 * 1000;
 const LAST_REDISTRIBUTED_KEY = "sg_redistribute_last_at";
@@ -22,8 +22,7 @@ function timeAgo(ts: number): string {
   return `${hours}h ago`;
 }
 
-// Canonical display order for known types; anything the backend returns that
-// isn't in this list still renders, just appended at the end.
+
 function orderedTypes(counts: Record<string, number>): string[] {
   const known = HONEYPOT_TYPES.filter((hp) => hp in counts);
   const unknown = Object.keys(counts).filter((hp) => !HONEYPOT_TYPES.includes(hp as never));
@@ -84,7 +83,7 @@ export default function DemoPage() {
     }
   }
 
-  const types = useMemo(() => (counts ? orderedTypes(counts) : []), [counts]);
+  const types = useMemo(() => (counts ? orderedTypes(counts) : [...HONEYPOT_TYPES]), [counts]);
   const total = useMemo(() => types.reduce((sum, hp) => sum + (counts?.[hp] ?? 0), 0), [types, counts]);
   const pieData = useMemo(
     () => types.map((hp) => ({
@@ -94,7 +93,6 @@ export default function DemoPage() {
     })),
     [types, counts]
   );
-
   const buttonLabel = redistributing ? "Redistributing…" : "Redistribute";
 
   return (
@@ -130,67 +128,52 @@ export default function DemoPage() {
         </div>
       </div>
 
-      {counts === null ? (
+      <div style={twoCol}>
+
+        {/* Left half — 6 honeypot type cells */}
         <div style={panel}>
-          <Empty msg={loadingState ? "Loading current honeypot counts…" : (stateErr || "No honeypot state available yet.")} />
-        </div>
-      ) : (
-        <div style={twoCol}>
-
-          {/* Left half — 6 honeypot type cells */}
-          <div style={panel}>
-            <div style={{ marginBottom: 14 }}>
-              <div style={cardTitle}>Honeypot Types</div>
-              <div style={{ ...subtle, marginTop: 4 }}>{total} honeypots running across {types.length} type{types.length === 1 ? "" : "s"}</div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
-              {types.map((hp) => (
-                <CategoryCell
-                  key={hp}
-                  label={TYPE_LABELS[hp as keyof typeof TYPE_LABELS] ?? hp}
-                  value={counts[hp]}
-                  accent={TYPE_COLORS[hp as keyof typeof TYPE_COLORS] ?? "#6b7a99"}
-                />
-              ))}
+          <div style={{ marginBottom: 14 }}>
+            <div style={cardTitle}>Honeypot Types</div>
+            <div style={{ ...subtle, marginTop: 4 }}>
+              {counts === null
+                ? (loadingState ? "Loading current honeypot counts…" : (stateErr || "No honeypot state available yet."))
+                : `${total} honeypots running across ${types.length} type${types.length === 1 ? "" : "s"}`}
             </div>
           </div>
-
-          {/* Right half — distribution donut + breakdown */}
-          <div style={panel}>
-            <div style={{ marginBottom: 14 }}>
-              <div style={cardTitle}>Distribution</div>
-              <div style={{ ...subtle, marginTop: 4 }}>Share of the honeynet held by each type</div>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="label"
-                  cx="50%" cy="50%"
-                  innerRadius={56} outerRadius={84}
-                  paddingAngle={3}
-                  strokeWidth={0}
-                />
-                <Tooltip content={(p) => <DarkTooltip {...p} />} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
-              {pieData.map((p) => {
-                const pct = total > 0 ? Math.round((p.value / total) * 100) : 0;
-                return (
-                  <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: p.fill, flexShrink: 0 }} />
-                    <span style={{ color: "#8896b0", flex: 1, fontFamily: "'Space Mono',monospace" }}>{p.label}</span>
-                    <span style={{ color: "#4b5f7c", fontSize: 10, minWidth: 28, textAlign: "right" }}>{pct}%</span>
-                    <span style={{ color: p.fill, fontWeight: 700, minWidth: 24, textAlign: "right" }}>{p.value}</span>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
+            {types.map((hp) => (
+              <CategoryCell
+                key={hp}
+                label={TYPE_LABELS[hp as keyof typeof TYPE_LABELS] ?? hp}
+                value={counts?.[hp] ?? 0}
+                accent={TYPE_COLORS[hp as keyof typeof TYPE_COLORS] ?? "#6b7a99"}
+              />
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Right half  */}
+        <div style={panel}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={cardTitle}>Distribution</div>
+            <div style={{ ...subtle, marginTop: 4 }}>Share of the honeynet held by each type</div>
+          </div>
+          <RaceBarChart data={pieData} height={240} />
+          <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+            {pieData.map((p) => {
+              const pct = total > 0 ? Math.round((p.value / total) * 100) : 0;
+              return (
+                <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: p.fill, flexShrink: 0 }} />
+                  <span style={{ color: "#8896b0", flex: 1, fontFamily: "'Space Mono',monospace" }}>{p.label}</span>
+                  <span style={{ color: "#4b5f7c", fontSize: 10, minWidth: 28, textAlign: "right" }}>{pct}%</span>
+                  <span style={{ color: p.fill, fontWeight: 700, minWidth: 24, textAlign: "right" }}>{p.value}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -208,41 +191,6 @@ function CategoryCell({ label, value, accent }: { label: string; value: number; 
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${accent},transparent)` }} />
       <div style={subtle}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 900, marginTop: 4, color: accent, lineHeight: 1 }}>{value}</div>
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DarkTooltip(props: any) {
-  const active: boolean | undefined = props.active;
-  const payload: Array<{ name?: unknown; value?: unknown; color?: string; fill?: string }> | undefined = props.payload;
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: "rgba(4,8,20,0.97)",
-      border: "1px solid rgba(59,130,246,0.3)",
-      borderRadius: 10,
-      padding: "10px 16px",
-      fontFamily: "'Space Mono', monospace",
-      fontSize: 12,
-      boxShadow: "0 8px 32px rgba(0,0,0,0.6)"
-    }}>
-      {payload.map((p, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: i > 0 ? 4 : 0 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: p.fill ?? p.color ?? "#3b82f6", flexShrink: 0, display: "inline-block" }} />
-          <span style={{ color: "#6b7a99" }}>{p.name !== undefined ? String(p.name) : "Value"}:</span>
-          <span style={{ color: "#e2e8f4", fontWeight: 700 }}>{p.value !== undefined ? String(p.value) : "—"}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Empty({ msg }: { msg: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "28px 0", color: "#3d4f6e", fontSize: 12 }}>
-      <span>◉</span>
-      <span style={{ lineHeight: 1.5 }}>{msg}</span>
     </div>
   );
 }
