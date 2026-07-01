@@ -8,6 +8,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -109,7 +110,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <div style={labelStyle}>Email (optional)</div>
+            <div style={labelStyle}>Email</div>
             <input
               style={inputStyle}
               type="email"
@@ -124,7 +125,7 @@ export default function SignupPage() {
             <div style={labelStyle}>Password</div>
             <input
               style={inputStyle}
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min. 8 characters"
@@ -136,13 +137,22 @@ export default function SignupPage() {
             <div style={labelStyle}>Confirm Password</div>
             <input
               style={inputStyle}
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSignup()}
               placeholder="Repeat password"
               autoComplete="new-password"
             />
+            <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 11, color: "#6b7a99", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              Show password
+            </label>
           </div>
 
           {error && (

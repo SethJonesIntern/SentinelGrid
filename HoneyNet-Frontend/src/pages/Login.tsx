@@ -6,6 +6,7 @@ export default function LoginPage() {
   const nav = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -105,12 +106,21 @@ export default function LoginPage() {
             <div style={label}>Password</div>
             <input
               style={inputStyle}
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               autoComplete="current-password"
             />
+            <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 11, color: "#6b7a99", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              Show password
+            </label>
           </div>
 
           {error && (
