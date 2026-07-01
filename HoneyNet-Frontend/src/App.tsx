@@ -12,6 +12,8 @@ import Sessions from "./pages/Sessions";
 import SessionDetail from "./pages/SessionDetail";
 import AttackAnalytics from "./pages/AttackAnalytics";
 import Distribution from "./pages/Distribution";
+import Demo from "./pages/Demo";
+import Location from "./pages/Location";
 
 export default function App() {
   return (
@@ -86,6 +88,28 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Distribution />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/demo"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Demo />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/location"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Location />
             </Layout>
           </ProtectedRoute>
         }

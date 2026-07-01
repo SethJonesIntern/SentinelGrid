@@ -63,11 +63,14 @@ export default function SessionsPage() {
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
           <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
           <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
-          <input
-            type="number" min={50} max={1000} value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            style={{ ...inputStyle, width: 90 }}
-          />
+          <label style={fieldLabel} title="Number of most-recent events to fetch (50–1000)">
+            Limit
+            <input
+              type="number" min={50} max={1000} value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              style={{ ...inputStyle, width: 90 }}
+            />
+          </label>
           <button onClick={() => void load()} style={btn}>Refresh</button>
         </div>
 
@@ -196,7 +199,20 @@ const pageTitle: React.CSSProperties = { fontSize: 22, fontWeight: 900, letterSp
 const sectionLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4b5f7c" };
 const subtle: React.CSSProperties = { color: "#6b7a99", fontSize: 12 };
 const topRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" };
-const filtersRow: React.CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16, alignItems: "center" };
+const filtersRow: React.CSSProperties = { display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16, alignItems: "flex-end" };
+
+const fieldLabel: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 5,
+  fontSize: 10,
+  color: "#6b7a99",
+  fontFamily: "'Space Mono', monospace",
+  whiteSpace: "nowrap",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+};
 
 const inputStyle: React.CSSProperties = {
   minWidth: 160,

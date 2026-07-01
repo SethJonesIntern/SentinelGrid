@@ -186,29 +186,12 @@ export function classifyHoneypotType(log: RawLogRow): HoneypotType {
   return "Other";
 }
 
-// Surfaces what's actually landing in "Other" (sensor_id/event_type pairs) so a
-// new honeypot whose naming doesn't match TYPE_PATTERNS is easy to spot and fix.
-export function buildUnclassifiedSamples(logs: RawLogRow[], limit = 6): CountPoint[] {
-  const counts = new Map<string, number>();
-
-  for (const log of logs) {
-    if (classifyHoneypotType(log) !== "Other") continue;
-    const raw = log.raw_json;
-    const label = `${raw?.sensor_id ?? "no sensor_id"} · ${raw?.event_type ?? "no event_type"}`;
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-
-  return Array.from(counts.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
-}
-
 export function buildHoneypotDistribution(logs: RawLogRow[]): CountPoint[] {
   const counts = new Map<HoneypotType, number>();
 
   for (const log of logs) {
     const type = classifyHoneypotType(log);
+    if (type === "Other") continue;
     counts.set(type, (counts.get(type) ?? 0) + 1);
   }
 

@@ -21,7 +21,7 @@ export default function LoginPage() {
       await login(username.trim(), password);
       nav("/dashboard");
     } catch (e) {
-      setError((e as Error).message || "Invalid email or password");
+      setError((e as Error).message || "Invalid username or password");
     } finally {
       setLoading(false);
     }

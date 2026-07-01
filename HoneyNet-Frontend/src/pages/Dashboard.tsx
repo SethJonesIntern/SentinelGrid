@@ -11,12 +11,19 @@ import {
   timeAgo
 } from "../lib/telemetry";
 
+const POLL_MS_KEY = "sg_dashboard_poll_ms";
+
 export default function DashboardPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [pollMs, setPollMs] = useState(5000);
+  const [pollMs, setPollMs] = useState<number>(() => {
+    const stored = localStorage.getItem(POLL_MS_KEY);
+    return stored ? Number(stored) : 5000;
+  });
   const [autoRefresh, setAutoRefresh] = useState(true);
+
+  useEffect(() => { localStorage.setItem(POLL_MS_KEY, String(pollMs)); }, [pollMs]);
 
   async function load() {
     try {
@@ -63,11 +70,11 @@ export default function DashboardPage() {
               />
               Auto-refresh
             </label>
-            <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={selectStyle}>
-              <option value={5000}>5s</option>
-              <option value={10000}>10s</option>
-              <option value={30000}>30s</option>
-              <option value={60000}>60s</option>
+            <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={selectStyle} title="How often to auto-refresh the dashboard">
+              <option value={5000} style={optionStyle}>5s</option>
+              <option value={10000} style={optionStyle}>10s</option>
+              <option value={30000} style={optionStyle}>30s</option>
+              <option value={60000} style={optionStyle}>60s</option>
             </select>
             <button onClick={() => void load()} style={btn}>Refresh now</button>
           </div>
@@ -286,7 +293,13 @@ const selectStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.03)",
   color: "#a8b5cc",
   fontSize: 12,
-  cursor: "pointer"
+  cursor: "pointer",
+  colorScheme: "dark"
+};
+
+const optionStyle: React.CSSProperties = {
+  background: "#0a1024",
+  color: "#e2e8f4"
 };
 
 const btn: React.CSSProperties = {

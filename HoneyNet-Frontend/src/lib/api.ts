@@ -35,6 +35,23 @@ export type TokenResponse = {
   token_type?: string;
 };
 
+export type RedistributionResponse = {
+  counts: Record<string, number>;
+};
+
+export type GeoCoordsResponse = {
+  ip: string;
+  latitude: number;
+  longitude: number;
+  city: string | null;
+  country: string | null;
+};
+
+export type HoneynetStateResponse = {
+  counts: Record<string, number>;
+  total: number;
+};
+
 function readRuntimeApiUrl(): string | null {
   const anyWin = window as unknown as { __ENV__?: { API_URL?: string } };
   return anyWin.__ENV__?.API_URL ?? null;
@@ -101,5 +118,28 @@ export const api = {
 
     me: (token: string) =>
       http<AuthUser>("/auth/me", { headers: authHeader(token) })
+  },
+
+  geo: {
+    coords: (ip: string) =>
+      http<GeoCoordsResponse>(`/get_coords?ip=${encodeURIComponent(ip)}`),
+  },
+
+  ml: {
+    // TODO: not reachable from the browser yet — GET /honeynet/state on the
+    // backend (HoneyNet-Backend/app/routes/ml.py) is gated behind a
+    // machine-only agent token. Once there's a user-facing way to read it,
+    // point this at the real path; it should keep returning the actual
+    // per-type honeypot counts currently running, unchanged.
+    state: () =>
+      http<HoneynetStateResponse>("/honeynet/state"),
+
+    // TODO: not live yet — the backend redistribute endpoint (talks to the ML
+    // model, runs the allocation, returns the resulting counts) is still being
+    // built. Point this at the real path once it lands; expected response
+    // shape is RedistributionResponse. The frontend does no ML/allocation
+    // logic of its own — it only renders whatever counts come back here.
+    redistribute: () =>
+      http<RedistributionResponse>("/redistribute", { method: "POST" })
   }
 };

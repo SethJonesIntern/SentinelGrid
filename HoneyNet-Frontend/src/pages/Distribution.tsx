@@ -4,7 +4,7 @@ import {
 } from "recharts";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
-import { buildHoneypotDistribution, buildUnclassifiedSamples } from "../lib/telemetry";
+import { buildHoneypotDistribution } from "../lib/telemetry";
 
 // Cowrie/SSH volume is high enough to bury low-traffic honeypot types (HTTP, FTP,
 // SMTP, MySQL, Redis) within the first ~1-30k most-recent rows, so this page needs
@@ -72,7 +72,6 @@ export default function DistributionPage() {
     [distribution]
   );
   const total = distribution.reduce((s, p) => s + p.value, 0);
-  const unclassified = useMemo(() => buildUnclassifiedSamples(logs), [logs]);
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -159,26 +158,6 @@ export default function DistributionPage() {
           )}
         </div>
       </div>
-
-      {/* Unclassified samples — only appears if something doesn't match a known type */}
-      {unclassified.length > 0 && (
-        <div style={panel}>
-          <div style={{ marginBottom: 10 }}>
-            <div style={cardTitle}>Unclassified Events (showing as "Other")</div>
-            <div style={{ ...subtle, marginTop: 4 }}>
-              sensor_id / event_type pairs that didn't match a known honeypot type — check these if a new honeypot isn't showing up where expected
-            </div>
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {unclassified.map((u) => (
-              <div key={u.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-                <span style={{ color: "#a8b5cc", flex: 1, fontFamily: "'Space Mono',monospace" }}>{u.label}</span>
-                <span style={{ color: "#6b7a99", fontWeight: 700 }}>{u.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
