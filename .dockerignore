@@ -1,0 +1,37 @@
+# Build context is the repo root (see HoneyNet-Backend/Dockerfile). Keep the
+# context small and keep secrets / heavy data out of the backend image.
+
+# Python cache
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+**/venv/
+**/.venv/
+**/.pytest_cache/
+
+# Secrets / env files (never bake into the image)
+**/.env
+**/.env.*
+**/config.env
+
+# Git / OS junk
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+*.log
+
+# Not needed in the backend image
+HoneyNet-Frontend/
+HoneyNet-DO-Agent/
+HoneyNet-Backend/sg-v4/
+HoneyNet-Backend/tests/
+
+# Heavy ML assets not needed at runtime (pipeline recreates data/outputs itself).
+# Keep notebooks/requirements.txt (the Dockerfile installs from it); drop the
+# heavy notebook files themselves.
+machine-learning/data/
+machine-learning/notebooks/*.ipynb

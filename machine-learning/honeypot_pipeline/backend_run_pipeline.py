@@ -16,7 +16,7 @@ LABELED_PATH= Path("../data/outputs/json/backend_logs_labeled.json")
 def main():
     for script in SCRIPTS:
         subprocess.run(
-            ["python", script],
+            [sys.executable, script],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
