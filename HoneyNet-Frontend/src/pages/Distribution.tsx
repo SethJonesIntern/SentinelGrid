@@ -6,6 +6,11 @@ import RaceBarChart from "../components/RaceBarChart";
 const COOLDOWN_MS = 10 * 60 * 1000;
 const LAST_REDISTRIBUTED_KEY = "sg_redistribute_last_at";
 
+// distributable pool = total (12) minus base (6 always-on)
+const DISTRIBUTABLE = 6;
+// FTP cannot scale — its distributable count is always 0
+const SCALABLE_TYPES = HONEYPOT_TYPES.filter((hp) => hp !== "ftp");
+
 function formatCountdown(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -33,13 +38,21 @@ export default function DemoPage() {
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [loadingState, setLoadingState] = useState(true);
   const [stateErr, setStateErr] = useState("");
-  const [redistributing, setRedistributing] = useState(false);
-  const [redistributeErr, setRedistributeErr] = useState("");
   const [lastRedistributedAt, setLastRedistributedAt] = useState<number | null>(() => {
     const stored = localStorage.getItem(LAST_REDISTRIBUTED_KEY);
     return stored ? Number(stored) : null;
   });
   const [now, setNow] = useState(() => Date.now());
+
+  //manual set panel 
+  const[showManual, setShowManual] = useState(false);
+  const[manualCounts, setManualCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(SCALABLE_TYPES.map((hp) => [hp, 0]))
+  );
+  const [manualErr, setManualErr] = useState("");
+  const [submittingManual, setSubmittingManual] = useState(false);
+  const manualTotal= SCALABLE_TYPES.reduce((s, hp) => s + (manualCounts[hp] ?? 0), 0);
+  const manualValid= manualTotal === DISTRIBUTABLE;
 
   async function loadState() {
     try {
@@ -65,21 +78,26 @@ export default function DemoPage() {
     return () => window.clearInterval(id);
   }, [onCooldown]);
 
-  async function handleRedistribute() {
-    if (onCooldown || redistributing) return;
-    setRedistributing(true);
+  async function handleSetManual() {
+    if (!manualValid || submittingManual) return;
+    setSubmittingManual(true);
+    setManualErr("");
     try {
-      setRedistributeErr("");
-      const res = await api.ml.redistribute();
-      setCounts(res.counts);
+      const token = localStorage.getItem("sg_auth_token");
+      if (!token) { setManualErr("Not logged in"); return; }
+      const payload: Record<string, number> = { ftp: 0 };
+      for (const hp of SCALABLE_TYPES) payload[hp] = manualCounts[hp] ?? 0;
+      await api.ml.setDistributionCounts(payload, token);
+      await loadState();
       const ts = Date.now();
       localStorage.setItem(LAST_REDISTRIBUTED_KEY, String(ts));
       setLastRedistributedAt(ts);
       setNow(ts);
+      setShowManual(false);
     } catch (e) {
-      setRedistributeErr((e as Error).message);
+      setManualErr((e as Error).message);
     } finally {
-      setRedistributing(false);
+      setSubmittingManual(false);
     }
   }
 
@@ -93,7 +111,6 @@ export default function DemoPage() {
     })),
     [types, counts]
   );
-  const buttonLabel = redistributing ? "Redistributing…" : "Redistribute";
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -108,13 +125,15 @@ export default function DemoPage() {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <button
-              className="redistribute-btn"
-              onClick={() => void handleRedistribute()}
-              disabled={redistributing || onCooldown}
-            >
-              {buttonLabel}
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="redistribute-btn"
+                onClick={() => { setShowManual((v) => !v); setManualErr(""); }}
+                style={{ opacity: showManual ? 0.6 : 1 }}
+              >
+                {showManual ? "Cancel" : "Set Manual Distribution"}
+              </button>
+            </div>
             {onCooldown && (
               <div style={{ fontSize: 11, color: "#f59e0b", fontFamily: "'Space Mono', monospace" }}>
                 Cooldown: {formatCountdown(cooldownRemaining)} remaining
@@ -122,10 +141,94 @@ export default function DemoPage() {
             )}
           </div>
         </div>
-        {redistributeErr && <div style={{ ...subtle, color: "#f87171", marginTop: 8 }}>{redistributeErr}</div>}
         <div style={{ ...subtle, marginTop: 8 }}>
           {lastRedistributedAt ? `Last redistributed ${timeAgo(lastRedistributedAt)}` : "Not redistributed yet this session"}
         </div>
+
+        {/* Manual set panel */}
+        {showManual && (
+          <div style={{ marginTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 18 }}>
+            <div style={{ ...cardTitle, marginBottom: 4 }}>Set Honeypot Counts Manually</div>
+            <div style={{ ...subtle, marginBottom: 14 }}>
+              Distribute {DISTRIBUTABLE} slots across types (each type  gets a default of at least 1 deployed) with a total of 12 honeypots.
+               FTP is fixed at 1 and cannot scale.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
+              {SCALABLE_TYPES.map((hp) => {
+                const color = TYPE_COLORS[hp as keyof typeof TYPE_COLORS] ?? "#6b7a99";
+                const remaining = DISTRIBUTABLE - manualTotal;
+                return (
+                  <div key={hp} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color, fontFamily: "'Space Mono', monospace" }}>
+                      {TYPE_LABELS[hp as keyof typeof TYPE_LABELS] ?? hp}
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => setManualCounts((c) => ({ ...c, [hp]: Math.max(0, (c[hp] ?? 0) - 1) }))}
+                        disabled={(manualCounts[hp] ?? 0) === 0}
+                        style={{ ...stepBtn, opacity: (manualCounts[hp] ?? 0) === 0 ? 0.3 : 1 }}
+                      >−</button>
+                      <input
+                        type="number"
+                        min={0}
+                        max={(manualCounts[hp] ?? 0) + remaining}
+                        value={manualCounts[hp] ?? 0}
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(Number(e.target.value), (manualCounts[hp] ?? 0) + remaining));
+                          setManualCounts((c) => ({ ...c, [hp]: v }));
+                        }}
+                        style={{ ...numInput, borderColor: color + "55" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setManualCounts((c) => ({ ...c, [hp]: (c[hp] ?? 0) + 1 }))}
+                        disabled={remaining === 0}
+                        style={{ ...stepBtn, opacity: remaining === 0 ? 0.3 : 1 }}
+                      >+</button>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#4b5f7c", fontFamily: "'Space Mono', monospace" }}>
+                      total: {(manualCounts[hp] ?? 0) + 1} 
+                    </div>
+                  </div>
+                );
+              })}
+              {/* FTP locked */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b7a99", fontFamily: "'Space Mono', monospace" }}>
+                  FTP <span style={{ color: "#4b5f7c" }}>(fixed)</span>
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button type="button" disabled style={{ ...stepBtn, opacity: 0.2 }}>−</button>
+                  <input type="number" value={1} readOnly style={{ ...numInput, opacity: 0.4, cursor: "not-allowed" }} />
+                  <button type="button" disabled style={{ ...stepBtn, opacity: 0.2 }}>+</button>
+                </div>
+                <div style={{ fontSize: 10, color: "#4b5f7c", fontFamily: "'Space Mono', monospace" }}>total: 1</div>
+              </div>
+            </div>
+
+            {/* Total indicator */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: manualValid ? "#34d399" : "#f59e0b", fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>
+                Distributable used: {manualTotal} / {DISTRIBUTABLE}
+                {manualValid ? "  ✓" : `  (${DISTRIBUTABLE - manualTotal} remaining)`}
+              </div>
+              <div style={{ fontSize: 12, color: "#4b5f7c" }}>
+                → total honeynet: {manualTotal + HONEYPOT_TYPES.length} 
+              </div>
+            </div>
+
+            {manualErr && <div style={{ ...subtle, color: "#f87171", marginBottom: 10 }}>{manualErr}</div>}
+
+            <button
+              onClick={() => void handleSetManual()}
+              disabled={!manualValid || submittingManual}
+              style={{ ...applyBtn, opacity: !manualValid || submittingManual ? 0.4 : 1 }}
+            >
+              {submittingManual ? "Applying…" : "Apply Distribution"}
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={twoCol}>
@@ -209,3 +312,30 @@ const cardTitle: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: "
 const subtle: React.CSSProperties = { color: "#6b7a99", fontSize: 12 };
 const topRow: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" };
 const twoCol: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))", gap: 16 };
+
+const stepBtn: React.CSSProperties = {
+  width: 28, height: 28, borderRadius: 6,
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#c8d3e8", fontSize: 16, cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  flexShrink: 0, fontFamily: "inherit",
+};
+
+const numInput: React.CSSProperties = {
+  width: 54, textAlign: "center",
+  padding: "5px 8px", borderRadius: 7,
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#e2e8f4", fontSize: 14, fontWeight: 700,
+  fontFamily: "'Space Mono', monospace",
+  outline: "none", colorScheme: "dark",
+};
+
+const applyBtn: React.CSSProperties = {
+  padding: "9px 20px", borderRadius: 9,
+  border: "1px solid rgba(52,211,153,0.4)",
+  background: "rgba(52,211,153,0.12)",
+  color: "#34d399", fontWeight: 700, fontSize: 13,
+  cursor: "pointer", fontFamily: "inherit",
+};

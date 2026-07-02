@@ -35,6 +35,14 @@ export type TokenResponse = {
   token_type?: string;
 };
 
+export type SetDistributionResponse={
+  override: boolean;
+  hold_seconds: number;
+  distributable_counts: Record<string, number>;
+  target_counts: Record<string, number>;
+  total: number;
+};
+
 export type RedistributionResponse = {
   counts: Record<string, number>;
 };
@@ -134,12 +142,14 @@ export const api = {
     state: () =>
       http<HoneynetStateResponse>("/honeynet/state"),
 
-    // TODO: not live yet — the backend redistribute endpoint (talks to the ML
-    // model, runs the allocation, returns the resulting counts) is still being
-    // built. Point this at the real path once it lands; expected response
-    // shape is RedistributionResponse. The frontend does no ML/allocation
-    // logic of its own — it only renders whatever counts come back here.
     redistribute: () =>
-      http<RedistributionResponse>("/redistribute", { method: "POST" })
+      http<RedistributionResponse>("/redistribute", { method: "POST" }),
+
+    setDistributionCounts: (counts: Record<string, number>, token: string) =>
+      http<SetDistributionResponse>("/distribution/set-counts", {
+        method: "POST",
+        body: JSON.stringify(counts),
+        headers: authHeader(token),
+      }),
   }
 };

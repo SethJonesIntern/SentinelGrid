@@ -67,3 +67,4 @@ machine-learning/data/cyberlab_outputs/*
 machine-learning/data/outputs/*
 
 .DS_Store
+dist.zip
