@@ -157,6 +157,8 @@ def main() -> None:
             print(f"[error] backend unreachable: {e}")
         except subprocess.CalledProcessError as e:
             print(f"[error] docker command failed: {e}")
+            if e.stderr:
+                print(f"[error] docker said: {e.stderr.strip()}")
         except Exception as e:  # keep the loop alive
             print(f"[error] unexpected: {e}")
         time.sleep(POLL_SECONDS)

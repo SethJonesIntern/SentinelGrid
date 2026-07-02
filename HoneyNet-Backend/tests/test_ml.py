@@ -54,6 +54,29 @@ def test_adapt_distribution_strips_suffix_and_zeros_ftp():
     assert max(dist, key=dist.get) == "smtp"
 
 
+def test_refresh_requires_token(client):
+    assert client.post("/distribution/refresh").status_code == 401
+
+
+def test_refresh_runs_pipeline_and_returns_distribution(client, agent_headers, monkeypatch):
+    from app.routes import ml as ml_route
+
+    monkeypatch.setattr(ml_route, "run_pipeline_once", lambda: True)
+    response = client.post("/distribution/refresh", headers=agent_headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["refreshed"] is True
+    assert set(body["distribution"].keys()) == set(HONEYPOT_TYPES)
+
+
+def test_refresh_returns_502_when_pipeline_fails(client, agent_headers, monkeypatch):
+    from app.routes import ml as ml_route
+
+    monkeypatch.setattr(ml_route, "run_pipeline_once", lambda: False)
+    response = client.post("/distribution/refresh", headers=agent_headers)
+    assert response.status_code == 502
+
+
 def test_predict_distribution_reads_plan(monkeypatch, tmp_path):
     plan = {
         "recommended_honeypot_distribution": {
