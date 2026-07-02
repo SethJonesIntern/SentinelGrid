@@ -17,7 +17,7 @@ from app.services.honeynet_state import (
     honeynet_state,
     plan_redistribution,
 )
-from app.services.security import require_agent_token
+from app.services.security import get_current_user, require_agent_token
 from app.services.ml_scheduler import defer_next_run, run_pipeline_once
 
 router = APIRouter()
@@ -43,7 +43,7 @@ def get_distribution():
     return {"distribution": predict_distribution()}
 
 
-@router.post("/distribution/refresh", dependencies=[Depends(require_agent_token)])
+@router.post("/distribution/refresh", dependencies=[Depends(get_current_user)])
 def refresh_distribution():
     """
     Re-run the ML pipeline on demand and return the freshly computed
@@ -62,7 +62,7 @@ def refresh_distribution():
         _refresh_lock.release()
 
 
-@router.post("/distribution/override", dependencies=[Depends(require_agent_token)])
+@router.post("/distribution/override", dependencies=[Depends(get_current_user)])
 def override_distribution(distribution: Dict[str, float]):
     """
     Pin a specific distribution instead of the ML model's, for a hold window
@@ -87,7 +87,7 @@ def override_distribution(distribution: Dict[str, float]):
     return {"override": True, "hold_seconds": hold, "distribution": stored}
 
 
-@router.delete("/distribution/override", dependencies=[Depends(require_agent_token)])
+@router.delete("/distribution/override", dependencies=[Depends(get_current_user)])
 def clear_distribution_override():
     """Drop the manual override so the ML model resumes on the next cycle."""
     clear_override()
@@ -95,7 +95,7 @@ def clear_distribution_override():
     return {"override": False, "distribution": predict_distribution()}
 
 
-@router.post("/distribution/set-counts", dependencies=[Depends(require_agent_token)])
+@router.post("/distribution/set-counts", dependencies=[Depends(get_current_user)])
 def set_distribution_counts(counts: Dict[str, int]):
     """
     Manually set the honeynet by specifying the DISTRIBUTABLE pool directly as

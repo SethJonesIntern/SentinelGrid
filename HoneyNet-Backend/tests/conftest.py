@@ -82,6 +82,16 @@ def agent_headers():
 
 
 @pytest.fixture()
+def user_headers(client):
+    """Auth header for a logged-in user (frontend-driven control endpoints)."""
+    res = client.post(
+        "/auth/signup", json={"username": "test-operator", "password": "password123"}
+    )
+    token = res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
 def valid_event_payload():
     return {
         "timestamp": "2026-04-18T12:00:00+00:00",

@@ -58,22 +58,22 @@ def test_refresh_requires_token(client):
     assert client.post("/distribution/refresh").status_code == 401
 
 
-def test_refresh_runs_pipeline_and_returns_distribution(client, agent_headers, monkeypatch):
+def test_refresh_runs_pipeline_and_returns_distribution(client, user_headers, monkeypatch):
     from app.routes import ml as ml_route
 
     monkeypatch.setattr(ml_route, "run_pipeline_once", lambda: True)
-    response = client.post("/distribution/refresh", headers=agent_headers)
+    response = client.post("/distribution/refresh", headers=user_headers)
     assert response.status_code == 200
     body = response.json()
     assert body["refreshed"] is True
     assert set(body["distribution"].keys()) == set(HONEYPOT_TYPES)
 
 
-def test_refresh_returns_502_when_pipeline_fails(client, agent_headers, monkeypatch):
+def test_refresh_returns_502_when_pipeline_fails(client, user_headers, monkeypatch):
     from app.routes import ml as ml_route
 
     monkeypatch.setattr(ml_route, "run_pipeline_once", lambda: False)
-    response = client.post("/distribution/refresh", headers=agent_headers)
+    response = client.post("/distribution/refresh", headers=user_headers)
     assert response.status_code == 502
 
 
@@ -81,11 +81,11 @@ def test_override_requires_token(client):
     assert client.post("/distribution/override", json={"smtp": 1.0}).status_code == 401
 
 
-def test_override_sets_and_serves_distribution(client, agent_headers):
+def test_override_sets_and_serves_distribution(client, user_headers):
     from app.services import ml_model
 
     try:
-        r = client.post("/distribution/override", json={"smtp": 1.0}, headers=agent_headers)
+        r = client.post("/distribution/override", json={"smtp": 1.0}, headers=user_headers)
         assert r.status_code == 200
         d = r.json()["distribution"]
         assert d["smtp"] == pytest.approx(1.0)
@@ -98,16 +98,16 @@ def test_override_sets_and_serves_distribution(client, agent_headers):
         ml_model.clear_override()
 
 
-def test_override_rejects_unknown_type(client, agent_headers):
-    r = client.post("/distribution/override", json={"telnet": 1.0}, headers=agent_headers)
+def test_override_rejects_unknown_type(client, user_headers):
+    r = client.post("/distribution/override", json={"telnet": 1.0}, headers=user_headers)
     assert r.status_code == 400
 
 
-def test_clear_override(client, agent_headers):
+def test_clear_override(client, user_headers):
     from app.services import ml_model
 
-    client.post("/distribution/override", json={"smtp": 1.0}, headers=agent_headers)
-    r = client.delete("/distribution/override", headers=agent_headers)
+    client.post("/distribution/override", json={"smtp": 1.0}, headers=user_headers)
+    r = client.delete("/distribution/override", headers=user_headers)
     assert r.status_code == 200
     assert ml_model.override_active() is False
 
@@ -116,14 +116,14 @@ def test_set_counts_requires_token(client):
     assert client.post("/distribution/set-counts", json={"ssh": 6}).status_code == 401
 
 
-def test_set_counts_sets_target(client, agent_headers):
+def test_set_counts_sets_target(client, user_headers):
     from app.services import ml_model
 
     try:
         r = client.post(
             "/distribution/set-counts",
             json={"ssh": 2, "http": 1, "smtp": 3},
-            headers=agent_headers,
+            headers=user_headers,
         )
         assert r.status_code == 200
         body = r.json()
@@ -136,16 +136,16 @@ def test_set_counts_sets_target(client, agent_headers):
         ml_model.clear_override()
 
 
-def test_set_counts_rejects_wrong_sum(client, agent_headers):
-    r = client.post("/distribution/set-counts", json={"ssh": 3, "http": 1}, headers=agent_headers)
+def test_set_counts_rejects_wrong_sum(client, user_headers):
+    r = client.post("/distribution/set-counts", json={"ssh": 3, "http": 1}, headers=user_headers)
     assert r.status_code == 400
 
 
-def test_set_counts_rejects_ftp(client, agent_headers):
+def test_set_counts_rejects_ftp(client, user_headers):
     r = client.post(
         "/distribution/set-counts",
         json={"ftp": 2, "ssh": 2, "http": 2},
-        headers=agent_headers,
+        headers=user_headers,
     )
     assert r.status_code == 400
 
