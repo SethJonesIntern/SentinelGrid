@@ -65,3 +65,5 @@ machine-learning/data/cyberlab_features/*
 machine-learning/data/cyberlab_outputs/*
 
 machine-learning/data/outputs/*
+
+.DS_Store
