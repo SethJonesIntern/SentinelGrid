@@ -44,6 +44,15 @@ else
 fi
 log "Compose: $DC"
 
+# ── Stage forwarder code ────────────────────────────────────────────────────────
+# The compose file mounts `./forwarder:/app`, which Compose resolves relative to
+# the compose file's directory (docker-compose/). Copy the forwarder code there
+# so the container actually finds forward_logs.py — otherwise it mounts an empty
+# /app and crash-loops.
+log "Staging forwarder code into docker-compose/forwarder/..."
+mkdir -p docker-compose/forwarder
+cp forwarder/*.py docker-compose/forwarder/
+
 # ── Network ───────────────────────────────────────────────────────────────────
 log "Checking Docker network..."
 if ! docker network ls --format '{{.Name}}' | grep -q "^sentinelgrid-net$"; then
