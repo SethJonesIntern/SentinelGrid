@@ -101,8 +101,8 @@ export function groupBySession(logs: RawLogRow[]): SessionSummary[] {
       src_ip: newest?.raw_json?.src_ip ?? "unknown",
       count: items.length,
       newest_id: newest?.id ?? 0,
-      newest_ts: newest?.raw_json?.timestamp ?? "",
-      oldest_ts: oldest?.raw_json?.timestamp ?? "",
+      newest_ts: newest?.created_at ?? "",
+      oldest_ts: oldest?.created_at ?? "",
       event_types,
       commands
     });

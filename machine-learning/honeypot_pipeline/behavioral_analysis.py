@@ -125,17 +125,31 @@ def run_kmeans_and_iso(input_csv_path: str, output_dir: str):
     )
         
     # find optimal k with silhouette score
+    # also reject any k where a cluster holds < 2% of sessions (noise clusters)
+    MIN_CLUSTER_FRAC = 0.02
     sil_scores= []
-    max_k = min(6, len(df) - 1)
+    valid_ks = []
+    max_k = min(8, len(df) - 1)
     k_range = range(2, max_k + 1)
     for k in k_range:
         km= KMeans(n_clusters=k, random_state= 42, n_init=10)
         labels= km.fit_predict(X_reduced)
+        counts = np.bincount(labels)
+        min_frac = counts.min() / len(labels)
+        if min_frac < MIN_CLUSTER_FRAC:
+            print(f"  k={k}  skipped (smallest cluster only {min_frac*100:.1f}% of data)")
+            continue
         score= silhouette_score(X_reduced, labels)
         sil_scores.append(score)
-        
-    best_k= k_range[np.argmax(sil_scores)]
-    print(f"Best K found: {best_k} (Score: {max(sil_scores):.4f})")
+        valid_ks.append(k)
+        print(f"  k={k}  silhouette={score:.4f}")
+
+    if not valid_ks:
+        best_k = 2
+        print("No valid k found — defaulting to k=2")
+    else:
+        best_k = valid_ks[np.argmax(sil_scores)]
+    print(f"Best K found: {best_k} (Score: {max(sil_scores) if sil_scores else 'n/a'})")
 
     #fit kmeans
     kmeans_final= KMeans(n_clusters= best_k, random_state=42, n_init=10)

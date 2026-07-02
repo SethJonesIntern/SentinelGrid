@@ -2,17 +2,40 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
 import { formatTimestamp, getCommandText, timeAgo } from "../lib/telemetry";
+import Dropdown from "../components/Dropdown";
 
 const POLL_MS_KEY = "sg_livefeed_poll_ms";
+
+const KNOWN_EVENT_TYPES = [
+  "cowrie.command.input",
+  "cowrie.direct-tcpip.request",
+  "cowrie.login.success",
+  "cowrie.session.closed",
+  "cowrie.session.connect",
+  "ftp.login.success",
+  "ftp.session.connect",
+  "ftp.session.disconnect",
+  "http.page.visit",
+  "http.scan.probe",
+  "mysql.session.connect",
+  "mysql.session.end",
+  "redis.session.connect",
+  "redis.session.disconnect",
+  "smtp.ehlo",
+  "smtp.login.attempt",
+  "smtp.session.connect",
+  "smtp.session.disconnect",
+  "ssh.login.attempt",
+];
 
 export default function LiveFeedPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(200);
   const [pollMs, setPollMs] = useState<number>(() => {
     const stored = localStorage.getItem(POLL_MS_KEY);
-    return stored ? Number(stored) : 10000;
+    return stored ? Number(stored) : 15000;
   });
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -61,7 +84,7 @@ export default function LiveFeedPage() {
     })
     .sort((a, b) => {
       const ts = (row: typeof a) => {
-        const t = new Date(row.raw_json.timestamp ?? "").getTime();
+        const t = new Date(row.created_at ?? "").getTime();
         return isNaN(t) ? row.id : t;
       };
       return ts(b) - ts(a);
@@ -93,7 +116,15 @@ export default function LiveFeedPage() {
         {/* Filters */}
         <div style={filtersRow}>
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
-          <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
+          <Dropdown
+            value={typeFilter}
+            onChange={setTypeFilter}
+            placeholder="All event types"
+            options={[
+              { label: "All event types", value: "" },
+              ...Array.from(new Set([...KNOWN_EVENT_TYPES, ...logs.map((l) => l.raw_json.event_type).filter(Boolean)])).sort().map((t) => ({ label: t, value: t }))
+            ]}
+          />
           <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
           <label style={fieldLabel} title="Number of most-recent events to fetch (50–1000)">
             Limit
@@ -105,9 +136,10 @@ export default function LiveFeedPage() {
           </label>
           <label style={fieldLabel} title="How often to auto-refresh the feed">
             Refresh every
-            <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={inputStyle}>
+            <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={selectStyle}>
               <option value={5000} style={optionStyle}>5s</option>
               <option value={10000} style={optionStyle}>10s</option>
+              <option value={15000} style={optionStyle}>15s</option>
               <option value={30000} style={optionStyle}>30s</option>
               <option value={60000} style={optionStyle}>60s</option>
             </select>
@@ -150,8 +182,8 @@ export default function LiveFeedPage() {
               {pageFiltered.map((l) => (
                 <tr key={l.id}>
                   <td>
-                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.raw_json.timestamp)}</div>
-                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.raw_json.timestamp)}</div>
+                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.created_at)}</div>
+                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.created_at)}</div>
                   </td>
                   <td><span style={pill}>{l.raw_json.src_ip}</span></td>
                   <td><span style={{ ...pill, color: "#93c5fd", borderColor: "rgba(99,165,255,0.3)" }}>{l.raw_json.event_type}</span></td>
@@ -171,7 +203,9 @@ export default function LiveFeedPage() {
                   <td colSpan={6}>
                     <div style={{ ...subtle, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "#2a3a52" }}>◉</span>
-                      No matching events found.
+                      {typeFilter
+                        ? `No "${typeFilter}" events found in ${logs.length} fetched logs.`
+                        : "No matching events found."}
                     </div>
                   </td>
                 </tr>
@@ -229,6 +263,17 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "'Space Mono', monospace",
   outline: "none",
   colorScheme: "dark",
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: "none" as const,
+  WebkitAppearance: "none" as const,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a99' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 10px center",
+  paddingRight: 28,
+  cursor: "pointer",
 };
 
 const optionStyle: React.CSSProperties = {
