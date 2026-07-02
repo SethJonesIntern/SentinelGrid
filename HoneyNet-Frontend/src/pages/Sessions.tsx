@@ -84,6 +84,7 @@ export default function SessionsPage() {
 
         <div style={filtersRow}>
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
+          <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
           <Dropdown
             value={typeFilter}
             onChange={setTypeFilter}
@@ -93,7 +94,6 @@ export default function SessionsPage() {
               ...Array.from(new Set([...KNOWN_EVENT_TYPES, ...logs.map((l) => l.raw_json.event_type).filter(Boolean)])).sort().map((t) => ({ label: t, value: t }))
             ]}
           />
-          <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
           <label style={fieldLabel} title="Number of most-recent events to fetch (50–1000)">
             Limit
             <input
