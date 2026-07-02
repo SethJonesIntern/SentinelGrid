@@ -2,8 +2,9 @@
 
 import json
 import os
+import time
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 # The honeypot containers that make up the honeynet (see docs/system_pipeline).
 # The distribution returned by the model is over exactly these types.
@@ -25,6 +26,33 @@ _DEFAULT_PLAN_PATH = (
 # Small mtime-keyed cache so the 15s redistribution poll doesn't re-read/parse
 # the plan every call.
 _cache: Dict[str, object] = {}
+
+# Manual override: when set (and unexpired), predict_distribution() returns this
+# instead of the ML plan. Lets an operator pin a specific distribution for a
+# hold window. See set_override / the /distribution/override endpoint.
+_override: Dict[str, object] = {"distribution": None, "expires_at": 0.0}
+
+
+def set_override(distribution: Dict[str, float], ttl_seconds: float) -> Dict[str, float]:
+    """
+    Pin a specific distribution for ``ttl_seconds``. The input is run through
+    adapt_distribution (FTP zeroed, normalised), stored, and returned so the
+    caller sees exactly what will be served.
+    """
+    adapted = adapt_distribution(distribution)
+    _override["distribution"] = adapted
+    _override["expires_at"] = time.monotonic() + ttl_seconds
+    return adapted
+
+
+def clear_override() -> None:
+    """Drop any active override so the ML plan is served again."""
+    _override["distribution"] = None
+    _override["expires_at"] = 0.0
+
+
+def override_active() -> bool:
+    return _override["distribution"] is not None and time.monotonic() < float(_override["expires_at"])
 
 
 def _plan_path() -> Path:
@@ -77,7 +105,12 @@ def predict_distribution() -> Dict[str, float]:
     and returns it. Falls back to a uniform distribution if the plan is missing
     or unreadable, so the redistribution control loop keeps working without the
     model. Takes no parameters — the model sources its data itself.
+
+    A manual override (if active) takes precedence over the ML plan.
     """
+    if override_active():
+        return dict(_override["distribution"])  # type: ignore[arg-type]
+
     path = _plan_path()
     try:
         mtime = path.stat().st_mtime

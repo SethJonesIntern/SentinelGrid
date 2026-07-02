@@ -140,11 +140,15 @@ def test_redistribution_endpoint(client, agent_headers):
 
 
 def test_protected_endpoints_reject_without_token(client):
-    assert client.get("/honeynet/state").status_code == 401
+    # GET /honeynet/state is public (read-only display data for the frontend).
+    assert client.get("/honeynet/state").status_code == 200
     assert client.get("/redistribution").status_code == 401
     assert client.put("/honeynet/state", json={"ssh": 1}).status_code == 401
 
 
 def test_protected_endpoints_reject_wrong_token(client):
     bad = {"Authorization": "Bearer wrong-token"}
-    assert client.get("/honeynet/state", headers=bad).status_code == 401
+    # GET is public, so a bad token is simply ignored (still 200).
+    assert client.get("/honeynet/state", headers=bad).status_code == 200
+    assert client.get("/redistribution", headers=bad).status_code == 401
+    assert client.put("/honeynet/state", json={"ssh": 1}, headers=bad).status_code == 401

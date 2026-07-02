@@ -33,7 +33,7 @@ COPY machine-learning/ ./machine-learning/
 ENV ML_PLAN_PATH=/app/machine-learning/data/outputs/json/honeypot_deployment.json
 ENV ML_PIPELINE_DIR=/app/machine-learning/honeypot_pipeline
 ENV ML_SCHEDULER_ENABLED=1
-ENV ML_REFRESH_SECONDS=3600
+ENV ML_REFRESH_SECONDS=900
 
 # Expose FastAPI port
 EXPOSE 8000
