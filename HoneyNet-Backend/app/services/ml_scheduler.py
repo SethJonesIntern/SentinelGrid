@@ -68,13 +68,36 @@ def run_pipeline_once() -> bool:
     return True
 
 
+# When the next scheduled inference should run (time.monotonic seconds). The
+# loop polls this so it can be pushed out at runtime via defer_next_run() — e.g.
+# when a manual distribution override is set.
+_next_run_at = 0.0
+_next_run_lock = threading.Lock()
+_POLL_SECONDS = 15
+
+
+def defer_next_run(seconds: float) -> None:
+    """Push the next scheduled inference out to now + ``seconds``."""
+    global _next_run_at
+    with _next_run_lock:
+        _next_run_at = time.monotonic() + seconds
+
+
 def _loop(interval: int, initial_delay: int) -> None:
     # Let the API finish coming up before the first run — the pipeline's
     # data_loader fetches from this backend's own /sessions endpoint.
-    time.sleep(initial_delay)
+    defer_next_run(initial_delay)
     while True:
-        run_pipeline_once()
-        time.sleep(interval)
+        with _next_run_lock:
+            due = time.monotonic() >= _next_run_at
+        if due:
+            # Don't overwrite an active manual override — wait it out.
+            from app.services.ml_model import override_active
+
+            if not override_active():
+                run_pipeline_once()
+                defer_next_run(interval)
+        time.sleep(_POLL_SECONDS)
 
 
 def start_scheduler() -> None:

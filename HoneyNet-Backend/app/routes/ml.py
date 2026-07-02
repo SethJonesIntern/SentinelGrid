@@ -1,12 +1,18 @@
+import os
 import threading
 from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.services.ml_model import predict_distribution
+from app.services.ml_model import (
+    HONEYPOT_TYPES,
+    clear_override,
+    predict_distribution,
+    set_override,
+)
 from app.services.honeynet_state import honeynet_state, plan_redistribution
 from app.services.security import require_agent_token
-from app.services.ml_scheduler import run_pipeline_once
+from app.services.ml_scheduler import defer_next_run, run_pipeline_once
 
 router = APIRouter()
 
@@ -44,6 +50,39 @@ def refresh_distribution():
         return {"refreshed": True, "distribution": predict_distribution()}
     finally:
         _refresh_lock.release()
+
+
+@router.post("/distribution/override", dependencies=[Depends(require_agent_token)])
+def override_distribution(distribution: Dict[str, float]):
+    """
+    Pin a specific distribution instead of the ML model's, for a hold window
+    (defaults to ML_REFRESH_SECONDS). The scheduled inference timer is pushed out
+    by the same window, so the override isn't immediately overwritten.
+
+    Body: a JSON object of honeypot type -> weight, e.g. {"smtp": 1.0}. Values
+    are normalised and FTP is forced to 0 (it can't scale). After the hold
+    expires, the ML model takes over again.
+    """
+    unknown = set(distribution) - set(HONEYPOT_TYPES)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"unknown honeypot types: {sorted(unknown)}")
+    if any(w < 0 for w in distribution.values()):
+        raise HTTPException(status_code=400, detail="weights must be non-negative")
+    if sum(distribution.values()) <= 0:
+        raise HTTPException(status_code=400, detail="distribution must have a positive total")
+
+    hold = float(os.getenv("ML_REFRESH_SECONDS", "900"))
+    stored = set_override(distribution, hold)
+    defer_next_run(hold)  # don't let the scheduler re-infer during the hold
+    return {"override": True, "hold_seconds": hold, "distribution": stored}
+
+
+@router.delete("/distribution/override", dependencies=[Depends(require_agent_token)])
+def clear_distribution_override():
+    """Drop the manual override so the ML model resumes on the next cycle."""
+    clear_override()
+    defer_next_run(0)  # let the scheduler re-infer on its next poll
+    return {"override": False, "distribution": predict_distribution()}
 
 
 @router.get("/honeynet/state")
