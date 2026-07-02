@@ -98,7 +98,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavItem to="/sessions" label="Sessions" />
             <NavItem to="/analytics" label="Analytics" />
             <NavItem to="/distribution" label="Distribution" />
-            <NavItem to="/demo" label="Demo" />
             <NavItem to="/location" label="Map" />
           </nav>
 

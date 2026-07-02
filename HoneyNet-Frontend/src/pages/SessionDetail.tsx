@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
-import { timeAgo } from "../lib/telemetry";
+import { formatTimestamp, timeAgo } from "../lib/telemetry";
 
 export default function SessionDetailPage() {
   const { id } = useParams();
@@ -67,7 +67,7 @@ export default function SessionDetailPage() {
           <MiniStat label="Total Events" value={String(logs.length)} accent="#3b82f6" />
           <MiniStat label="Source IP" value={srcIp} accent="#f87171" />
           <MiniStat label="Event Types" value={String(eventTypes.length)} accent="#22d3ee" />
-          <MiniStat label="Time Span" value={timeAgo(logs[logs.length - 1]?.raw_json.timestamp)} accent="#fbbf24" />
+          <MiniStat label="Time Span" value={timeAgo(logs[logs.length - 1]?.created_at)} accent="#fbbf24" />
         </div>
       )}
 
@@ -92,8 +92,8 @@ export default function SessionDetailPage() {
                 <tr key={l.id}>
                   <td style={{ fontSize: 11, color: "#4b5f7c", fontFamily: "'Space Mono', monospace" }}>{l.id}</td>
                   <td>
-                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{l.raw_json.timestamp}</div>
-                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.raw_json.timestamp)}</div>
+                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.created_at)}</div>
+                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.created_at)}</div>
                   </td>
                   <td>
                     <span style={{ ...pill, color: "#93c5fd", borderColor: "rgba(99,165,255,0.25)" }}>

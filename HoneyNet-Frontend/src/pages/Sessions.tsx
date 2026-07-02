@@ -3,6 +3,29 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RawLogRow } from "../lib/api";
 import { formatTimestamp, groupBySession } from "../lib/telemetry";
+import Dropdown from "../components/Dropdown";
+
+const KNOWN_EVENT_TYPES = [
+  "cowrie.command.input",
+  "cowrie.direct-tcpip.request",
+  "cowrie.login.success",
+  "cowrie.session.closed",
+  "cowrie.session.connect",
+  "ftp.login.success",
+  "ftp.session.connect",
+  "ftp.session.disconnect",
+  "http.page.visit",
+  "http.scan.probe",
+  "mysql.session.connect",
+  "mysql.session.end",
+  "redis.session.connect",
+  "redis.session.disconnect",
+  "smtp.ehlo",
+  "smtp.login.attempt",
+  "smtp.session.connect",
+  "smtp.session.disconnect",
+  "ssh.login.attempt",
+];
 
 export default function SessionsPage() {
   const [logs, setLogs] = useState<RawLogRow[]>([]);
@@ -61,7 +84,15 @@ export default function SessionsPage() {
 
         <div style={filtersRow}>
           <input value={ipFilter} onChange={(e) => setIpFilter(e.target.value)} placeholder="Filter src_ip" style={inputStyle} />
-          <input value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} placeholder="Filter event_type" style={inputStyle} />
+          <Dropdown
+            value={typeFilter}
+            onChange={setTypeFilter}
+            placeholder="All event types"
+            options={[
+              { label: "All event types", value: "" },
+              ...Array.from(new Set([...KNOWN_EVENT_TYPES, ...logs.map((l) => l.raw_json.event_type).filter(Boolean)])).sort().map((t) => ({ label: t, value: t }))
+            ]}
+          />
           <input value={sidFilter} onChange={(e) => setSidFilter(e.target.value)} placeholder="Filter session_id" style={inputStyle} />
           <label style={fieldLabel} title="Number of most-recent events to fetch (50–1000)">
             Limit
@@ -155,7 +186,9 @@ export default function SessionsPage() {
                   <td colSpan={7}>
                     <div style={{ ...subtle, padding: "16px 0", display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "#2a3a52" }}>◉</span>
-                      No sessions match your filters.
+                      {typeFilter
+                        ? `No "${typeFilter}" sessions found in ${logs.length} fetched logs.`
+                        : "No sessions match your filters."}
                     </div>
                   </td>
                 </tr>

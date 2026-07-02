@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [pollMs, setPollMs] = useState<number>(() => {
     const stored = localStorage.getItem(POLL_MS_KEY);
-    return stored ? Number(stored) : 5000;
+    return stored ? Number(stored) : 15000;
   });
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -73,6 +73,7 @@ export default function DashboardPage() {
             <select value={pollMs} onChange={(e) => setPollMs(Number(e.target.value))} style={selectStyle} title="How often to auto-refresh the dashboard">
               <option value={5000} style={optionStyle}>5s</option>
               <option value={10000} style={optionStyle}>10s</option>
+              <option value={15000} style={optionStyle}>15s</option>
               <option value={30000} style={optionStyle}>30s</option>
               <option value={60000} style={optionStyle}>60s</option>
             </select>
@@ -182,8 +183,8 @@ export default function DashboardPage() {
                 <tr key={l.id}>
                   <td style={{ color: "#4b5f7c", fontSize: 12 }}>{l.id}</td>
                   <td>
-                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.raw_json.timestamp)}</div>
-                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.raw_json.timestamp)}</div>
+                    <div style={{ fontSize: 12, color: "#c8d3e8" }}>{formatTimestamp(l.created_at)}</div>
+                    <div style={{ fontSize: 11, color: "#4b5f7c", marginTop: 2 }}>{timeAgo(l.created_at)}</div>
                   </td>
                   <td><span style={pill}>{l.raw_json.src_ip}</span></td>
                   <td><span style={{ ...pill, color: "#93c5fd", borderColor: "rgba(99,165,255,0.3)" }}>{l.raw_json.event_type}</span></td>
