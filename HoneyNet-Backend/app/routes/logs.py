@@ -7,9 +7,16 @@ from app.models import RawLog
 
 router = APIRouter()
 
+# Hard ceiling on how many rows a single /logs response can serialize. Without
+# this, a caller (or the ML pipeline) requesting the whole table loads hundreds
+# of thousands of rows into memory at once and OOM-kills the instance.
+MAX_LIMIT = 20000
+
+
 @router.get("/logs")
 @router.get("/sessions")
-def get_sessions(db: Session = Depends(get_db), limit: int = 1000000):
+def get_sessions(db: Session = Depends(get_db), limit: int = 200):
+    limit = max(1, min(limit, MAX_LIMIT))
     rows = (
         db.query(RawLog)
         .order_by(desc(RawLog.id))

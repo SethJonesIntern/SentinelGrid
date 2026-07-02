@@ -26,8 +26,11 @@ EVENT_PREFIX_TO_COUNT_COL= {
     "smtp":"smtp_honeypot_count",
 }
 
-#loads logs from the backend 
-def load_backend_logs(api_url="https://uddiejez3g.us-east-1.awsapprunner.com/sessions") -> pd.DataFrame:
+#loads logs from the backend
+# NOTE: request a bounded window (?limit=), not the whole table. The pipeline
+# only needs the latest ~100 sessions; pulling the entire raw_logs table OOM-kills
+# the App Runner backend serialising hundreds of thousands of rows.
+def load_backend_logs(api_url="https://uddiejez3g.us-east-1.awsapprunner.com/sessions?limit=10000") -> pd.DataFrame:
     response = requests.get(api_url)
     response.raise_for_status()
     data= response.json()

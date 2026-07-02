@@ -10,11 +10,21 @@ from app.services.ml_model import (
     predict_distribution,
     set_override,
 )
-from app.services.honeynet_state import honeynet_state, plan_redistribution
+from app.services.honeynet_state import (
+    BASE_PER_TYPE,
+    TOTAL_HONEYPOTS,
+    allocate,
+    honeynet_state,
+    plan_redistribution,
+)
 from app.services.security import require_agent_token
 from app.services.ml_scheduler import defer_next_run, run_pipeline_once
 
 router = APIRouter()
+
+# The distributable pool: total honeypots minus the always-on base (1 per type).
+# = 12 - 6 = 6. Manual count-based sets must fill exactly these slots.
+DISTRIBUTABLE = TOTAL_HONEYPOTS - BASE_PER_TYPE * len(HONEYPOT_TYPES)
 
 # Guards on-demand refreshes so concurrent triggers can't stack multiple heavy
 # pipeline runs at once (they'd compete for memory).
@@ -83,6 +93,52 @@ def clear_distribution_override():
     clear_override()
     defer_next_run(0)  # let the scheduler re-infer on its next poll
     return {"override": False, "distribution": predict_distribution()}
+
+
+@router.post("/distribution/set-counts", dependencies=[Depends(require_agent_token)])
+def set_distribution_counts(counts: Dict[str, int]):
+    """
+    Manually set the honeynet by specifying the DISTRIBUTABLE pool directly as
+    counts. The counts must sum to 6 (TOTAL_HONEYPOTS minus the 6 always-on base
+    honeypots). Every type also gets its base 1, so the honeynet totals 12.
+
+    Body: honeypot type -> count, e.g. {"ssh": 2, "http": 1, "smtp": 3} (sum 6).
+    FTP can't scale (fixed at 1), so its distributable count must be 0/omitted.
+    The result holds for a window (defaults to ML_REFRESH_SECONDS), then the ML
+    model resumes; the scheduled inference is deferred so it won't overwrite it.
+    """
+    unknown = set(counts) - set(HONEYPOT_TYPES)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"unknown honeypot types: {sorted(unknown)}")
+    if any(v < 0 for v in counts.values()):
+        raise HTTPException(status_code=400, detail="counts must be non-negative")
+    if counts.get("ftp", 0) != 0:
+        raise HTTPException(
+            status_code=400,
+            detail="ftp can't scale (fixed at 1); its distributable count must be 0",
+        )
+    total = sum(counts.values())
+    if total != DISTRIBUTABLE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"distributable counts must sum to {DISTRIBUTABLE} (got {total})",
+        )
+
+    # Turn the distributable counts into weights and pin them as an override.
+    # Because each weight is count/6, allocate() reproduces the counts exactly.
+    weights = {hp: counts.get(hp, 0) / DISTRIBUTABLE for hp in HONEYPOT_TYPES}
+    hold = float(os.getenv("ML_REFRESH_SECONDS", "900"))
+    set_override(weights, hold)
+    defer_next_run(hold)
+
+    target = allocate(predict_distribution())
+    return {
+        "override": True,
+        "hold_seconds": hold,
+        "distributable_counts": {hp: counts.get(hp, 0) for hp in HONEYPOT_TYPES},
+        "target_counts": target,
+        "total": sum(target.values()),
+    }
 
 
 @router.get("/honeynet/state")

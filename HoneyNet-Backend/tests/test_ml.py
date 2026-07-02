@@ -112,6 +112,44 @@ def test_clear_override(client, agent_headers):
     assert ml_model.override_active() is False
 
 
+def test_set_counts_requires_token(client):
+    assert client.post("/distribution/set-counts", json={"ssh": 6}).status_code == 401
+
+
+def test_set_counts_sets_target(client, agent_headers):
+    from app.services import ml_model
+
+    try:
+        r = client.post(
+            "/distribution/set-counts",
+            json={"ssh": 2, "http": 1, "smtp": 3},
+            headers=agent_headers,
+        )
+        assert r.status_code == 200
+        body = r.json()
+        assert body["total"] == 12
+        # base 1 each + the distributable counts
+        assert body["target_counts"] == {
+            "ssh": 3, "http": 2, "smtp": 4, "redis": 1, "mysql": 1, "ftp": 1,
+        }
+    finally:
+        ml_model.clear_override()
+
+
+def test_set_counts_rejects_wrong_sum(client, agent_headers):
+    r = client.post("/distribution/set-counts", json={"ssh": 3, "http": 1}, headers=agent_headers)
+    assert r.status_code == 400
+
+
+def test_set_counts_rejects_ftp(client, agent_headers):
+    r = client.post(
+        "/distribution/set-counts",
+        json={"ftp": 2, "ssh": 2, "http": 2},
+        headers=agent_headers,
+    )
+    assert r.status_code == 400
+
+
 def test_predict_distribution_reads_plan(monkeypatch, tmp_path):
     plan = {
         "recommended_honeypot_distribution": {

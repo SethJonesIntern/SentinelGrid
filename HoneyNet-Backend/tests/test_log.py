@@ -109,12 +109,46 @@ def test_log_rejects_malformed_timestamp(client):
 
 
 def test_log_assigns_incrementing_ids(client, valid_event_payload):
-    first = client.post("/log", json=valid_event_payload).json()["id"]
-    second = client.post("/log", json=valid_event_payload).json()["id"]
-    third = client.post("/log", json=valid_event_payload).json()["id"]
+    # Distinct events (different src_ip) so the dedup guard doesn't drop them.
+    def post(ip):
+        return client.post("/log", json={**valid_event_payload, "source_ip": ip}).json()["id"]
+
+    first = post("10.1.1.1")
+    second = post("10.1.1.2")
+    third = post("10.1.1.3")
 
     assert second == first + 1
     assert third == second + 1
+
+
+def test_log_deduplicates_identical_events(client, db_session, valid_event_payload):
+    first = client.post("/log", json=valid_event_payload)
+    assert first.status_code == 200
+    assert first.json()["status"] == "accepted"
+
+    # Same event again → dropped by the unique content_hash guard.
+    second = client.post("/log", json=valid_event_payload)
+    assert second.status_code == 200
+    assert second.json()["status"] == "duplicate"
+
+    # Only one row exists for that content.
+    ch = first.json()  # ensure first was stored
+    assert "id" in ch
+
+
+def test_log_ignores_forwarder_heartbeat(client, db_session):
+    before = db_session.query(RawLog).count()
+    payload = {
+        "timestamp": "2026-04-18T12:00:00+00:00",
+        "source_ip": "127.0.0.1",
+        "event_type": "forwarder.heartbeat",
+        "honeypot_type": "forwarder",
+    }
+    response = client.post("/log", json=payload)
+    assert response.status_code == 200
+    assert response.json()["status"] == "ignored"
+    # nothing persisted
+    assert db_session.query(RawLog).count() == before
 
 
 def test_log_stores_canonical_iso_timestamp(client, db_session, valid_event_payload):
