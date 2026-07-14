@@ -332,27 +332,48 @@ function computeFlowProfile(sev, eventsPerMin){
   return { lineCount, speed };
 }
 
-let lastBackgroundFlowAt = 0;
-function emitBackgroundFlows(nowMs){
-  //every blob has a line toward orlando
-  if (nowMs - lastBackgroundFlowAt < 5000) return;
-  lastBackgroundFlowAt = nowMs;
+// Wave state machine: 'idle' → 'drawing' → 'pausing' → 'idle' → ...
+let wavePhase = 'idle';
 
-  for (const [ip, stat] of ipStats.entries()) {
-    if (!stat?.geo) continue;
-    const hasActiveLine = activeArcs.some((a) => a.sourceIp === ip && a.t <= 1.05);
-    if (hasActiveLine) continue;
+function triggerWave() {
+  if (wavePhase !== 'idle') return;
+  const ips = [...ipStats.entries()].filter(([, stat]) => stat?.geo);
+  if (ips.length === 0) {
+    setTimeout(triggerWave, 1500);
+    return;
+  }
+  wavePhase = 'drawing';
 
-    const sev = stat.sev || 'low';
-    const count = stat.count || 1;
-    const base = sev === 'high' ? 1.5 : sev === 'med' ? 1.3 : 1.1;
-    const speed = base + Math.min(Math.sqrt(count) * 0.03, 0.35);
-    const delay = 5000 + Math.random() * 4000;
+  // Each line fires at a fully random time within a 8s window — organic, not synchronized
+  const DRAW_WINDOW_MS = 8000;
+  let maxDelay = 0;
+  ips.forEach(([ip, stat]) => {
+    const delay = Math.random() * DRAW_WINDOW_MS;
+    if (delay > maxDelay) maxDelay = delay;
     setTimeout(() => {
+      const sev = stat.sev || 'low';
+      const count = stat.count || 1;
+      const base = sev === 'high' ? 0.45 : sev === 'med' ? 0.35 : 0.25;
+      // Each arc travels at its own random speed so they finish at different times
+      const speed = base + Math.random() * 0.15;
       spawnAttack(toVec3(stat.geo.lat, stat.geo.lon, R*1.01), sev, speed, ip, true);
     }, delay);
-  }
+  });
+
+  // Wait for the last arc to be spawned + enough time for the slowest to finish traveling
+  const arcTravelMs = 7000;
+  const pauseMs = 5000;
+  setTimeout(() => {
+    wavePhase = 'pausing';
+    setTimeout(() => {
+      wavePhase = 'idle';
+      triggerWave();
+    }, pauseMs);
+  }, maxDelay + arcTravelMs);
 }
+
+// Kick off the first wave once initial data has had a chance to load
+function emitBackgroundFlows(){ /* replaced by wave system */ }
 
 function updateArcs(dt){
   for(let i=activeArcs.length-1;i>=0;i--){
@@ -727,7 +748,7 @@ async function pollEvents(){
   }
 }
 setInterval(pollEvents, CONFIG.POLL_INTERVAL_MS);
-if(CONFIG.DEMO_MODE){ seedDemoData(); } else { pollEvents(); }
+if(CONFIG.DEMO_MODE){ seedDemoData(); setTimeout(triggerWave, 3000); } else { pollEvents().then(() => setTimeout(triggerWave, 1000)); }
 
 let isDragging=false, prevX=0, prevY=0;
 let autoRotate = true;
@@ -769,7 +790,6 @@ const clock = new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
-  emitBackgroundFlows(performance.now());
   if(autoRotate) earthGroup.rotation.y += dt*0.06;
   sweep.rotation.z += dt*0.4;
   const pulse = 1 + Math.sin(clock.elapsedTime*3)*0.15;

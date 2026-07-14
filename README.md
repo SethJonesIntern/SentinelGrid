@@ -43,5 +43,4 @@ SENTINELGRID/
 ## Documentation
 - `documentation/minutes.tex` : All Scrum and meeting minutes are updated and stored here. This file is updated on Overleaf throughout the semesters and tracks the team's Scrum activities such as sprint planning and reviews. 
 You can view it here: [Project Meeting Minutes (PDF)](documentation/minutes.pdf).
-
 - `local_testing.txt`: This is where you can find instructions for local testing on the Sentinel Grid Cowrie honeypot. 
