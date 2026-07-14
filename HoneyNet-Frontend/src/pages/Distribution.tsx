@@ -94,6 +94,7 @@ export default function DemoPage() {
       setLastRedistributedAt(ts);
       setNow(ts);
       setShowManual(false);
+      setTimeout(() => void loadState(), 10000);
     } catch (e) {
       setManualErr((e as Error).message);
     } finally {

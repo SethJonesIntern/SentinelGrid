@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SentinelGrid — Map</title>
+<style>
+  :root{
+    --bg:#05070c;
+    --panel:rgba(10,16,26,0.82);
+    --panel-border:rgba(18,224,216,0.18);
+    --grid:#12e0d8;
+    --text:#d7e6ea;
+    --text-dim:#6b8b90;
+    --honeypot:#ffb703;
+    --sev-low:#38bdf8;
+    --sev-med:#fb923c;
+    --sev-high:#ef4444;
+    --mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:var(--sans);}
+  #scene{position:absolute;inset:0;cursor:grab;}
+  #scene.dragging{cursor:grabbing;}
+
+  .hud{position:absolute;pointer-events:none;}
+  .hud .panel, .hud.panel{pointer-events:auto;}
+
+  #topbar{top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px;}
+  #brand{font-family:var(--mono);color:var(--text);}
+  #brand .title{font-size:15px;letter-spacing:3px;font-weight:700;color:#eafcff;}
+  #brand .sub{font-size:11px;letter-spacing:1.5px;color:var(--text-dim);margin-top:4px;}
+  #status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--text-dim);background:var(--panel);border:1px solid var(--panel-border);padding:7px 12px;border-radius:20px;}
+  #status .dot{width:7px;height:7px;border-radius:50%;background:var(--sev-med);box-shadow:0 0 8px var(--sev-med);}
+  #status.live .dot{background:#4ade80;box-shadow:0 0 8px #4ade80;}
+  #status.offline .dot{background:var(--sev-high);box-shadow:0 0 8px var(--sev-high);}
+
+  #stats{top:74px;left:22px;display:flex;gap:10px;}
+  .stat{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:9px 14px;font-family:var(--mono);min-width:88px;}
+  .stat .val{font-size:19px;color:#eafcff;font-weight:700;}
+  .stat .lbl{font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-top:2px;}
+
+  #feed{top:74px;right:22px;bottom:56px;width:300px;background:var(--panel);border:1px solid var(--panel-border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;}
+  #feed .feed-head{padding:11px 14px;border-bottom:1px solid var(--panel-border);font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);}
+  #feed-list{flex:1;overflow-y:auto;padding:6px 0;}
+  #feed-list::-webkit-scrollbar{width:4px;}
+  #feed-list::-webkit-scrollbar-thumb{background:var(--panel-border);}
+  .feed-item{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-family:var(--mono);font-size:11px;display:flex;flex-direction:column;gap:3px;animation:slidein .35s ease;}
+  @keyframes slidein{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
+  .feed-item .row1{display:flex;justify-content:space-between;color:var(--text);}
+  .feed-item .ip{color:#eafcff;}
+  .feed-item .row2{display:block;color:var(--text-dim);font-size:10px;}
+  .badge{padding:1px 6px;border-radius:4px;font-size:9px;letter-spacing:.5px;font-weight:700;}
+  .badge.low{background:rgba(56,189,248,.15);color:var(--sev-low);}
+  .badge.med{background:rgba(251,146,60,.15);color:var(--sev-med);}
+  .badge.high{background:rgba(239,68,68,.15);color:var(--sev-high);}
+
+  #legend{bottom:16px;left:22px;display:flex;gap:16px;font-family:var(--mono);font-size:10px;color:var(--text-dim);align-items:center;}
+  #legend .item{display:flex;align-items:center;gap:6px;}
+  #legend .swatch{width:9px;height:9px;border-radius:50%;}
+  #hint{bottom:16px;right:344px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.5px;}
+
+  #leaderboard{top:146px;left:22px;width:320px;background:var(--panel);border:1px solid var(--panel-border);border-radius:10px;overflow:hidden;}
+  #leaderboard .lb-head{padding:10px 14px;border-bottom:1px solid var(--panel-border);font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);}
+  #lb-list{padding:6px 10px;min-height:8px;}
+  .lb-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--mono);font-size:11px;color:var(--text);}
+  .lb-rank{width:13px;color:var(--text-dim);}
+  .lb-ip{flex:0 0 auto;color:#eafcff;min-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lb-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+  .lb-bar{height:100%;border-radius:3px;}
+  .lb-count{width:34px;text-align:right;color:var(--text-dim);}
+
+  #map-tooltip{
+    position:absolute;
+    z-index:20;
+    pointer-events:none;
+    display:none;
+    background:rgba(6,10,24,0.95);
+    border:1px solid rgba(59,130,246,0.35);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:#d7e6ea;
+    white-space:nowrap;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4);
+  }
+  #map-tooltip .ip{font-weight:700;color:#eafcff;}
+  #map-tooltip .loc{color:var(--text-dim);margin-top:2px;}
+  #map-tooltip .count{color:#93c5fd;margin-top:3px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="map-tooltip"></div>
+
+<div class="hud" id="topbar">
+  <div id="brand">
+    <div class="title">SENTINELGRID</div>
+    <div class="sub">MAP // HONEYNET TELEMETRY</div>
+  </div>
+  <div class="panel" id="status"><span class="dot"></span><span id="status-text">CONNECTING</span></div>
+</div>
+
+<div class="hud" id="stats">
+  <div class="panel stat"><div class="val" id="stat-total">0</div><div class="lbl">EVENTS</div></div>
+  <div class="panel stat"><div class="val" id="stat-unique">0</div><div class="lbl">UNIQUE IPS</div></div>
+  <div class="panel stat"><div class="val" id="stat-rate">0</div><div class="lbl">AVG/HR (24H)</div></div>
+</div>
+
+<div class="hud panel" id="leaderboard">
+  <div class="lb-head">TOP ATTACKERS</div>
+  <div id="lb-list"></div>
+</div>
+
+<div class="hud panel" id="feed">
+  <div class="feed-head">RECENT ATTACKS</div>
+  <div id="feed-list"></div>
+</div>
+
+<div class="hud" id="legend">
+  <div class="item"><span class="swatch" style="background:var(--honeypot)"></span>Honeypot</div>
+  <div class="item"><span class="swatch" style="background:#34d399"></span>1-4 attacks</div>
+  <div class="item"><span class="swatch" style="background:#fbbf24"></span>5-19 attacks</div>
+  <div class="item"><span class="swatch" style="background:#fb923c"></span>20-99 attacks</div>
+  <div class="item"><span class="swatch" style="background:#ef4444"></span>100+ attacks</div>
+  <div class="item">blob size &amp; color = attack volume</div>
+</div>
+<div class="hud" id="hint">drag to rotate · scroll to zoom</div>
+
+<script src="/env.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const CONFIG = {
+  API_BASE: (window.__ENV__ && window.__ENV__.API_URL) || 'https://uddiejez3g.us-east-1.awsapprunner.com',
+  EVENTS_ENDPOINT: '/sessions?limit=2000',
+  GEO_ENDPOINT: '/get_coords',
+  POLL_INTERVAL_MS: 4000,
+  HONEYPOT: { lat: 28.5383, lon: -81.3792, label: 'Orlando Honeypot Cluster' },
+  
+  DEMO_MODE: false,
+};
+
+const EVENTS_LIMIT= Number(new URLSearchParams(CONFIG.EVENTS_ENDPOINT.split('?')[1] || '').get('limit') || 2000);
+const EARTH_TEXTURE_URL= "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg";
+
+function severityOf(eventType){
+  if(!eventType) return 'low';
+  if(eventType.includes('login.success') || eventType.includes('command') || eventType.includes('upload')) return 'high';
+  if(eventType.includes('login.failed') || eventType.includes('login.attempt') || eventType.includes('auth')) return 'med';
+  return 'low';
+}
+const SEV_COLOR= { low: 0x38bdf8, med: 0xfb923c, high: 0xef4444 };
+const SEV_BADGE= { low: 'low', med: 'med', high: 'high' };
+const mount = document.getElementById('scene');
+const tooltipEl = document.getElementById('map-tooltip');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0,0,6.2);
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+mount.appendChild(renderer.domElement);
+
+const earthGroup= new THREE.Group();
+scene.add(earthGroup);
+
+const R= 2.0;
+function toVec3(lat, lon, radius=R){
+  const phi = (90-lat)*(Math.PI/180);
+  const theta = (lon+180)*(Math.PI/180);
+  return new THREE.Vector3(
+    -radius*Math.sin(phi)*Math.cos(theta),
+    radius*Math.cos(phi),
+    radius*Math.sin(phi)*Math.sin(theta)
+  );
+}
+
+const core= new THREE.Mesh(
+  new THREE.SphereGeometry(R*0.985, 48, 48),
+  new THREE.MeshStandardMaterial({
+    color: 0x6eb6ff,
+    emissive: 0x0b2348,
+    emissiveIntensity: 0.45,
+    roughness: 0.65,
+    metalness: 0.0,
+  })
+);
+earthGroup.add(core);
+
+// load earth with continents on the globe
+new THREE.TextureLoader().load(
+  EARTH_TEXTURE_URL,
+  (texture) => {
+    texture.encoding = THREE.sRGBEncoding;
+    core.material.map = texture;
+    core.material.needsUpdate = true;
+  },
+  undefined,
+  () => {
+  }
+);
+
+function buildGrid(){
+  const pts = [];
+  for(let lat=-75; lat<=75; lat+=15){
+    for(let lon=-180; lon<180; lon+=4){
+      pts.push(toVec3(lat,lon).toArray());
+      pts.push(toVec3(lat,lon+4).toArray());
+    }
+  }
+  for(let lon=-180; lon<180; lon+=15){
+    for(let lat=-90; lat<90; lat+=4){
+      pts.push(toVec3(lat,lon).toArray());
+      pts.push(toVec3(lat+4,lon).toArray());
+    }
+  }
+  const flat = new Float32Array(pts.flat());
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(flat,3));
+  return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({color:0x12e0d8, transparent:true, opacity:0.12}));
+}
+earthGroup.add(buildGrid());
+
+const glow= new THREE.Mesh(
+  new THREE.SphereGeometry(R*1.08, 48, 48),
+  new THREE.MeshBasicMaterial({color:0x12e0d8, transparent:true, opacity:0.025, side:THREE.BackSide})
+);
+earthGroup.add(glow);
+
+const blueTint= new THREE.Mesh(
+  new THREE.SphereGeometry(R*0.992, 48, 48),
+  new THREE.MeshBasicMaterial({
+    color: 0x2d8cff,
+    transparent: true,
+    opacity: 0.16,
+  })
+);
+earthGroup.add(blueTint);
+const rim = new THREE.Mesh(
+  new THREE.SphereGeometry(R*1.002, 48, 48),
+  new THREE.MeshBasicMaterial({color:0xbfefff, transparent:true, opacity:0.12, side:THREE.BackSide})
+);
+earthGroup.add(rim);
+
+const sweepGeo= new THREE.RingGeometry(R*1.001, R*1.001+0.015, 64, 1, 0, Math.PI*0.6);
+const sweep = new THREE.Mesh(sweepGeo, new THREE.MeshBasicMaterial({color:0x12e0d8, transparent:true, opacity:0.35, side:THREE.DoubleSide}));
+sweep.rotation.x = Math.PI/2 * 0.15;
+earthGroup.add(sweep);
+
+const honeypotPos = toVec3(CONFIG.HONEYPOT.lat, CONFIG.HONEYPOT.lon, R*1.01);
+const honeypotMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.045, 16, 16),
+  new THREE.MeshBasicMaterial({color:0xffb703})
+);
+honeypotMarker.position.copy(honeypotPos);
+earthGroup.add(honeypotMarker);
+
+const honeypotPulse= new THREE.Mesh(
+  new THREE.RingGeometry(0.05,0.06,32),
+  new THREE.MeshBasicMaterial({color:0xffb703, transparent:true, opacity:0.6, side:THREE.DoubleSide})
+);
+honeypotPulse.position.copy(honeypotPos);
+honeypotPulse.lookAt(0,0,0);
+earthGroup.add(honeypotPulse);
+
+scene.add(new THREE.AmbientLight(0xb9d5ff, 0.45));
+const sun = new THREE.DirectionalLight(0xffffff, 1.05);
+sun.position.set(3.5, 2.6, 5.5);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4cc9f0, 0.24);
+fill.position.set(-3, -1.3, -4);
+scene.add(fill);
+
+const activeArcs = [];
+const activePings = [];
+const MAX_ARCS = 300;
+
+function spawnPing(pos, color){
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.01,0.02,24),
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.9, side:THREE.DoubleSide})
+  );
+  ring.position.copy(pos);
+  ring.lookAt(0,0,0);
+  earthGroup.add(ring);
+  activePings.push({mesh:ring, life:0});
+}
+
+function spawnAttack(attackerPos, sev, speed = 0.7, sourceIp = null, force = false){
+  const color = SEV_COLOR[sev];
+  spawnPing(attackerPos, color);
+
+  const mid = attackerPos.clone().add(honeypotPos).multiplyScalar(0.5);
+  const dist = attackerPos.distanceTo(honeypotPos);
+  mid.setLength(R + dist*0.4);
+  const curve = new THREE.QuadraticBezierCurve3(attackerPos, mid, honeypotPos);
+  const points = curve.getPoints(96);
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineBasicMaterial({color, transparent:true, opacity:0.5});
+  const line = new THREE.Line(geo, mat);
+  line.geometry.setDrawRange(0,0);
+  earthGroup.add(line);
+
+  if(activeArcs.length >= MAX_ARCS){
+    let removeIdx = activeArcs.findIndex((a) => a.t >= 1);
+    if (removeIdx === -1 && force && sourceIp) {
+      removeIdx = activeArcs.findIndex((a) => a.sourceIp === sourceIp);
+    }
+    if (removeIdx === -1 && force) {
+      removeIdx = 0;
+    }
+    if (removeIdx === -1) return;
+    const [old] = activeArcs.splice(removeIdx, 1);
+    if (old) earthGroup.remove(old.line);
+  }
+  activeArcs.push({line, curve, t:0, life:0, speed, sourceIp, totalPoints:points.length});
+}
+
+function computeFlowProfile(sev, eventsPerMin){
+  const activity = Math.min(eventsPerMin / 140, 1);
+  const sevBase = sev === 'high' ? 1.45 : sev === 'med' ? 1.2 : 1.0;
+  const speed = sevBase + activity * 0.55;
+
+  //more events = more lines to orlando origin of honeypost
+  let lineCount = 1;
+  if (sev === 'high' && activity > 0.18) lineCount += 1;
+  if (activity > 0.55) lineCount += 1;
+  if (activity > 0.85) lineCount += 1;
+  if (lineCount < 1) lineCount = 1;
+
+  return { lineCount, speed };
+}
+
+let lastBackgroundFlowAt = 0;
+function emitBackgroundFlows(nowMs){
+  //every blob has a line toward orlando
+  if (nowMs - lastBackgroundFlowAt < 5000) return;
+  lastBackgroundFlowAt = nowMs;
+
+  for (const [ip, stat] of ipStats.entries()) {
+    if (!stat?.geo) continue;
+    const hasActiveLine = activeArcs.some((a) => a.sourceIp === ip && a.t <= 1.05);
+    if (hasActiveLine) continue;
+
+    const sev = stat.sev || 'low';
+    const count = stat.count || 1;
+    const base = sev === 'high' ? 1.5 : sev === 'med' ? 1.3 : 1.1;
+    const speed = base + Math.min(Math.sqrt(count) * 0.03, 0.35);
+    const delay = 5000 + Math.random() * 4000;
+    setTimeout(() => {
+      spawnAttack(toVec3(stat.geo.lat, stat.geo.lon, R*1.01), sev, speed, ip, true);
+    }, delay);
+  }
+}
+
+function updateArcs(dt){
+  for(let i=activeArcs.length-1;i>=0;i--){
+    const a = activeArcs[i];
+    a.t += dt*(a.speed || 0.7);
+    a.life += dt;
+    const drawCount = Math.min(a.totalPoints, Math.floor(a.t * a.totalPoints) + 8);
+    a.line.geometry.setDrawRange(0, drawCount);
+    if(a.t > 1){
+      a.line.material.opacity = Math.max(0, 0.6 - (a.life-400.0)*0.003);
+      if(a.life > 1800){
+        earthGroup.remove(a.line);
+        activeArcs.splice(i,1);
+      }
+    }
+  }
+}
+function updatePings(dt){
+  for(let i=activePings.length-1;i>=0;i--){
+    const p = activePings[i];
+    p.life += dt;
+    const s = 1 + p.life*6;
+    p.mesh.scale.set(s,s,s);
+    p.mesh.material.opacity = Math.max(0, 0.9 - p.life*1.2);
+    if(p.life > 0.75){ earthGroup.remove(p.mesh); activePings.splice(i,1); }
+  }
+}
+
+const geoCache = new Map();
+const seenLogIds = new Set();
+let totalEvents = 0;
+const eventTimestamps = [];
+let dbAvgPerHour24h = 0;
+let pollInFlight = false;
+
+function formatAvgPerHour(value){
+  if (value >= 100) return String(Math.round(value));
+  if (value >= 10) return value.toFixed(1);
+  return value.toFixed(2);
+}
+
+function parseApiTimeMs(value){
+  if (!value || typeof value !== 'string') return NaN;
+  // Backend may emit naive UTC datetimes (no timezone suffix). Treat those as UTC.
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value);
+  const normalized = hasTimezone ? value : `${value}Z`;
+  return Date.parse(normalized);
+}
+
+function formatApiLocalTime(value){
+  const ms = parseApiTimeMs(value);
+  if (Number.isNaN(ms)) return 'Unknown time';
+  return new Date(ms).toLocaleTimeString();
+}
+
+const ipStats = new Map();
+const persistentMarkers = new Map();
+const SEV_RANK = {low:1, med:2, high:3};
+const _projectTmp = new THREE.Vector3();
+
+function bumpAttacker(ip, geo, sev){
+  const stat = ipStats.get(ip) || {count:0, geo, sev:'low'};
+  stat.count++;
+  stat.geo = geo;
+  if(SEV_RANK[sev] > SEV_RANK[stat.sev]) stat.sev = sev;
+  ipStats.set(ip, stat);
+
+  upsertMarker(ip, stat);
+  renderLeaderboard();
+}
+
+function markerVisual(count){
+  const size = Math.min(0.03 + Math.sqrt(Math.max(count, 0)) * 0.02, 0.20);
+  let colorHex = 0x34d399;
+  if (count >= 100) colorHex = 0xef4444;
+  else if (count >= 20) colorHex = 0xfb923c;
+  else if (count >= 5) colorHex = 0xfbbf24;
+
+  const color = new THREE.Color(colorHex);
+  const intensity = Math.min(0.35, 0.08 + Math.sqrt(Math.max(count, 0)) * 0.03);
+  const t = intensity / 0.35;
+  return {size, color, t};
+}
+
+function upsertMarker(ip, stat){
+  let entry = persistentMarkers.get(ip);
+  const {size, color, t} = markerVisual(stat.count);
+  const pos = toVec3(stat.geo.lat, stat.geo.lon, R*1.01);
+
+  if(!entry){
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 16, 16),
+      new THREE.MeshBasicMaterial({transparent:true, opacity:0.88})
+    );
+    mesh.position.copy(pos);
+    earthGroup.add(mesh);
+
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 16, 16),
+      new THREE.MeshBasicMaterial({transparent:true, opacity:0, side:THREE.BackSide})
+    );
+    glow.position.copy(pos);
+    earthGroup.add(glow);
+
+    entry = {mesh, glow};
+    persistentMarkers.set(ip, entry);
+  }
+
+  entry.mesh.scale.setScalar(size);
+  entry.mesh.material.color.copy(color);
+  entry.glow.scale.setScalar(size * 2.2);
+  entry.glow.material.color.copy(color);
+  entry.glow.material.opacity = t * 0.35;
+}
+
+function hideTooltip(){
+  tooltipEl.style.display = 'none';
+}
+
+function updateHoverTooltip(clientX, clientY){
+  const rect = dom.getBoundingClientRect();
+  const mx = clientX - rect.left;
+  const my = clientY - rect.top;
+
+  let nearest = null;
+  let nearestDist = 16;
+
+  for (const [ip, marker] of persistentMarkers.entries()) {
+    marker.mesh.getWorldPosition(_projectTmp);
+    _projectTmp.project(camera);
+
+    if (_projectTmp.z < -1 || _projectTmp.z > 1) continue;
+
+    const sx = (_projectTmp.x * 0.5 + 0.5) * rect.width;
+    const sy = (-_projectTmp.y * 0.5 + 0.5) * rect.height;
+    const dx = sx - mx;
+    const dy = sy - my;
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    if (d < nearestDist) {
+      nearestDist = d;
+      const stat = ipStats.get(ip);
+      nearest = { ip, sx, sy, stat };
+    }
+  }
+
+  if (!nearest || !nearest.stat) {
+    hideTooltip();
+    return;
+  }
+
+  const city = nearest.stat.geo?.city || 'Unknown city';
+  const country = nearest.stat.geo?.country || 'Unknown country';
+  const count = nearest.stat.count || 0;
+
+  tooltipEl.innerHTML = `
+    <div class="ip">${nearest.ip}</div>
+    <div class="loc">${city}, ${country}</div>
+    <div class="count">${count} attacks</div>
+  `;
+  tooltipEl.style.left = `${nearest.sx + 14}px`;
+  tooltipEl.style.top = `${nearest.sy - 10}px`;
+  tooltipEl.style.display = 'block';
+}
+
+function renderLeaderboard(){
+  const list = document.getElementById('lb-list');
+  const sorted = [...ipStats.entries()].sort((a,b)=>b[1].count-a[1].count).slice(0,8);
+  const max = sorted.length ? sorted[0][1].count : 1;
+  list.innerHTML = sorted.map(([ip,stat],i)=>{
+    const pct = Math.max(6, Math.round(stat.count/max*100));
+    const country = stat.geo && stat.geo.country ? stat.geo.country : '';
+    const barColor = '#' + markerVisual(stat.count).color.getHexString();
+    return `<div class="lb-row">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-ip">${ip}${country ? (' · '+country) : ''}</span>
+      <span class="lb-bar-wrap"><span class="lb-bar" style="width:${pct}%;background:${barColor}"></span></span>
+      <span class="lb-count">${stat.count}</span>
+    </div>`;
+  }).join('');
+}
+
+const DEMO_POOL = [
+  {ip:'103.219.44.12', city:'Hanoi', country:'VN', lat:21.03, lon:105.85},
+  {ip:'45.146.164.87', city:'Bucharest', country:'RO', lat:44.43, lon:26.10},
+  {ip:'193.32.162.55', city:'Moscow', country:'RU', lat:55.75, lon:37.62},
+  {ip:'185.220.101.7', city:'Frankfurt', country:'DE', lat:50.11, lon:8.68},
+  {ip:'23.129.64.184', city:'Sao Paulo', country:'BR', lat:-23.55, lon:-46.63},
+  {ip:'139.99.238.14', city:'Singapore', country:'SG', lat:1.35, lon:103.82},
+  {ip:'92.63.197.153', city:'Amsterdam', country:'NL', lat:52.37, lon:4.90},
+  {ip:'161.35.70.249', city:'Bangalore', country:'IN', lat:12.97, lon:77.59},
+  {ip:'118.24.9.201', city:'Beijing', country:'CN', lat:39.90, lon:116.40},
+  {ip:'41.203.216.30', city:'Lagos', country:'NG', lat:6.52, lon:3.38},
+];
+const DEMO_EVENT_TYPES = [
+  'cowrie.session.connect','cowrie.login.failed','cowrie.login.success',
+  'http.request','ftp.login.failed','mysql.connect.attempt','smtp.helo','redis.command'
+];
+function demoEvent(){
+  const src = DEMO_POOL[Math.floor(Math.random()*DEMO_POOL.length)];
+  return {
+    timestamp: new Date().toISOString(),
+    source_ip: src.ip,
+    event_type: DEMO_EVENT_TYPES[Math.floor(Math.random()*DEMO_EVENT_TYPES.length)],
+    session_id: Math.random().toString(36).slice(2,10),
+    sensor_id: 'demo-sensor',
+    data: {},
+    _geo: src
+  };
+}
+
+function seedDemoData(){
+  const weights = [14, 9, 6, 4, 3, 2, 2, 1, 1, 1];
+  const queue = [];
+  DEMO_POOL.forEach((src, i) => {
+    const n = weights[i] ?? 1;
+    for(let k=0;k<n;k++) queue.push(src);
+  });
+  for(let i=queue.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [queue[i],queue[j]] = [queue[j],queue[i]];
+  }
+  let idx = 0;
+  const iv = setInterval(()=>{
+    if(idx >= queue.length){ clearInterval(iv); return; }
+    const src = queue[idx++];
+    handleEvent({
+      timestamp: new Date().toISOString(),
+      source_ip: src.ip,
+      event_type: DEMO_EVENT_TYPES[Math.floor(Math.random()*DEMO_EVENT_TYPES.length)],
+      session_id: Math.random().toString(36).slice(2,10),
+      sensor_id: 'demo-sensor',
+      data: {},
+      _geo: src
+    });
+  }, 120);
+}
+
+async function resolveGeo(ip){
+  if(geoCache.has(ip)) return geoCache.get(ip);
+  const res = await fetch(`${CONFIG.API_BASE}${CONFIG.GEO_ENDPOINT}?ip=${encodeURIComponent(ip)}`);
+  if(!res.ok) throw new Error('geo lookup failed');
+  const j = await res.json();
+  const geo = {lat:j.latitude, lon:j.longitude, city:j.city, country:j.country};
+  geoCache.set(ip, geo);
+  return geo;
+}
+
+function setStatus(state, text){
+  const el = document.getElementById('status');
+  el.className = 'panel ' + state;
+  document.getElementById('status-text').textContent = text;
+}
+
+function pushFeedItem(ev, geo, sev){
+  const list = document.getElementById('feed-list');
+  const div = document.createElement('div');
+  div.className = 'feed-item';
+  const time = formatApiLocalTime(ev.timestamp);
+  div.innerHTML = `
+    <div class="row1"><span class="ip">${ev.source_ip}</span><span class="badge ${SEV_BADGE[sev]}">${sev}</span></div>
+    <div class="row2"><span>${ev.event_type} · ${(geo && geo.city) ? geo.city+', '+geo.country : 'Unknown location'} · ${time}</span></div>
+  `;
+  list.prepend(div);
+  while(list.children.length > 40) list.removeChild(list.lastChild);
+}
+
+function updateStats(){
+  document.getElementById('stat-total').textContent = totalEvents;
+  document.getElementById('stat-unique').textContent = geoCache.size;
+  const now = Date.now();
+  while(eventTimestamps.length && now - eventTimestamps[0] > 60000) eventTimestamps.shift();
+  document.getElementById('stat-rate').textContent = formatAvgPerHour(dbAvgPerHour24h);
+}
+
+async function handleEvent(ev){
+  const ip = ev.source_ip;
+  if(!ip || ip === '127.0.0.1' || ip.startsWith('10.') || ip.startsWith('192.168.') || /^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return;
+  if(typeof ev.id === 'number'){
+    if(seenLogIds.has(ev.id)) return;
+  }
+
+  let geo;
+  try{
+    geo = ev._geo ? {lat:ev._geo.lat, lon:ev._geo.lon, city:ev._geo.city, country:ev._geo.country} : await resolveGeo(ev.source_ip);
+    if(ev._geo) geoCache.set(ev.source_ip, geo); else geoCache.set(ev.source_ip, geo);
+  } catch(e){
+    console.warn('geo lookup failed for', ev.source_ip, e);
+    geo = { lat: null, lon: null, city: null, country: null };
+  }
+
+  if(typeof ev.id === 'number') seenLogIds.add(ev.id);
+
+  const sev = severityOf(ev.event_type);
+  const eventsPerMin = eventTimestamps.length;
+  const flow = computeFlowProfile(sev, eventsPerMin);
+  if (typeof geo.lat === 'number' && typeof geo.lon === 'number') {
+    for(let i=0;i<flow.lineCount;i++){
+      const variance = 1.0 + Math.random() * 0.15;
+      spawnAttack(toVec3(geo.lat, geo.lon, R*1.01), sev, flow.speed * variance, ev.source_ip, false);
+    }
+    bumpAttacker(ev.source_ip, geo, sev);
+  }
+  pushFeedItem(ev, geo, sev);
+  totalEvents++;
+  eventTimestamps.push(Date.now());
+  updateStats();
+}
+
+async function pollEvents(){
+  if (pollInFlight) return;
+  pollInFlight = true;
+  if(CONFIG.DEMO_MODE){
+    setStatus('offline','DEMO DATA');
+    handleEvent(demoEvent());
+    pollInFlight = false;
+    return;
+  }
+  try{
+    const res = await fetch(`${CONFIG.API_BASE}${CONFIG.EVENTS_ENDPOINT}`);
+    if(!res.ok) throw new Error('bad response '+res.status);
+    const payload = await res.json();
+
+    const cutoffMs = Date.now() - 86400000;
+    const sourceRows = Array.isArray(payload?.logs)
+      ? payload.logs
+      : Array.isArray(payload)
+        ? payload
+        : [];
+    const limitedRows = sourceRows.slice(0, EVENTS_LIMIT);
+
+    let count24h = 0;
+    for (const row of limitedRows) {
+      const ts = row?.created_at || row?.timestamp || row?.raw_json?.timestamp;
+      const ms = parseApiTimeMs(ts);
+      if (!Number.isNaN(ms) && ms >= cutoffMs) count24h += 1;
+    }
+    dbAvgPerHour24h = count24h / 24;
+
+    // Backend /sessions returns { count, logs: [{ raw_json, created_at, ... }] }.
+    // Normalize those rows into the event shape used by this map.
+    const events = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.logs)
+        ? limitedRows.map((row) => ({
+            id: row?.id,
+            timestamp: row?.created_at || row?.raw_json?.timestamp || new Date().toISOString(),
+            source_ip: row?.raw_json?.src_ip,
+            event_type: row?.raw_json?.event_type,
+            session_id: row?.raw_json?.session_id,
+            sensor_id: row?.raw_json?.sensor_id,
+            data: row?.raw_json?.payload || {},
+          }))
+        : [];
+
+    setStatus('live','LIVE');
+    const orderedEvents = (Array.isArray(events) ? events : []).slice().sort((a, b) => {
+      const aMs = parseApiTimeMs(a?.timestamp || "");
+      const bMs = parseApiTimeMs(b?.timestamp || "");
+      const aSafe = Number.isNaN(aMs) ? 0 : aMs;
+      const bSafe = Number.isNaN(bMs) ? 0 : bMs;
+      return aSafe - bSafe;
+    });
+    for (const ev of orderedEvents) {
+      await handleEvent(ev);
+    }
+  } catch(e){
+    console.error('event poll failed', e);
+    setStatus('offline','OFFLINE — CHECK API_BASE');
+  } finally {
+    pollInFlight = false;
+  }
+}
+setInterval(pollEvents, CONFIG.POLL_INTERVAL_MS);
+if(CONFIG.DEMO_MODE){ seedDemoData(); } else { pollEvents(); }
+
+let isDragging=false, prevX=0, prevY=0;
+let autoRotate = true;
+const dom = renderer.domElement;
+dom.addEventListener('pointerdown', e=>{isDragging=true; autoRotate=false; prevX=e.clientX; prevY=e.clientY; mount.classList.add('dragging');});
+dom.addEventListener('mousemove', e => updateHoverTooltip(e.clientX, e.clientY));
+dom.addEventListener('mouseleave', hideTooltip);
+const feed = document.getElementById('feed');
+const feedList = document.getElementById('feed-list');
+if (feedList) {
+  feedList.addEventListener('wheel', (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+}
+window.addEventListener('pointerup', ()=>{isDragging=false; mount.classList.remove('dragging');});
+window.addEventListener('pointermove', e=>{
+  if(!isDragging) return;
+  hideTooltip();
+  const dx=e.clientX-prevX, dy=e.clientY-prevY;
+  earthGroup.rotation.y += dx*0.005;
+  earthGroup.rotation.x = Math.max(-0.9, Math.min(0.9, earthGroup.rotation.x + dy*0.005));
+  prevX=e.clientX; prevY=e.clientY;
+});
+dom.addEventListener('wheel', e=>{
+  if ((feed && feed.contains(e.target)) || (feedList && feedList.contains(e.target))) {
+    return;
+  }
+  e.preventDefault();
+  camera.position.z = Math.max(3.2, Math.min(10, camera.position.z + e.deltaY*0.003));
+}, {passive:false});
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  emitBackgroundFlows(performance.now());
+  if(autoRotate) earthGroup.rotation.y += dt*0.06;
+  sweep.rotation.z += dt*0.4;
+  const pulse = 1 + Math.sin(clock.elapsedTime*3)*0.15;
+  honeypotPulse.scale.set(pulse,pulse,pulse);
+  updateArcs(dt);
+  updatePings(dt);
+  updateStats();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

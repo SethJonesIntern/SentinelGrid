@@ -7,12 +7,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
-import LiveFeed from "./pages/LiveFeed";
 import Sessions from "./pages/Sessions";
 import SessionDetail from "./pages/SessionDetail";
 import AttackAnalytics from "./pages/AttackAnalytics";
 import Distribution from "./pages/Distribution";
-import Location from "./pages/Location";
+import Map from "./pages/Map";
 
 export default function App() {
   return (
@@ -32,17 +31,6 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/live"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <LiveFeed />
             </Layout>
           </ProtectedRoute>
         }
@@ -97,7 +85,7 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Layout>
-              <Location />
+              <Map />
             </Layout>
           </ProtectedRoute>
         }

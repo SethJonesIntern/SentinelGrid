@@ -37,12 +37,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Stars using box-shadow technique */}
+      {/* s using box shadow technique */}
       <div className="stars1" />
       <div className="stars2" />
       <div className="stars3" />
 
-      {/* Globe */}
+      {/* globe */}
       <Globe />
 
       <div
@@ -65,7 +65,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             zIndex: 100
           }}
         >
-          {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
               width: 28,
@@ -91,10 +90,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
 
-          {/* Nav */}
+          {/* nav */}
           <nav style={{ display: "flex", gap: 6 }}>
             <NavItem to="/dashboard" label="Dashboard" />
-            <NavItem to="/live" label="Live Feed" />
+
             <NavItem to="/sessions" label="Sessions" />
             <NavItem to="/analytics" label="Analytics" />
             <NavItem to="/distribution" label="Distribution" />
