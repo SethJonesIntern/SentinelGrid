@@ -115,10 +115,13 @@ There is a slight scheduling conflict of our meeting times since one of our memb
 \subsection{3-9-2026}
 \textbf{Attendance:} Everyone was present during this meeting. 
 \\\textbf{Progress Update:} In this meeting, we talked about the tasks for the next two sprints since they are connected. The main goal is to move Sentinel Grid to a real cloud honey net with a working dashboard and structured attack data. Zach sent out tasks for everyone for week 4 to 7 and we also updated the Jira board sprints and assigned tasks per role. Yama will start on the template for the Preliminary Design document so we can split up everyone's parts. We will work parallel to efficiently get tasks done. Next week is spring break, so we will just have a basic progress update on implementation and documentation. 
-\section{Sprint 0 : 2/1/2026 - 2/15/2026}
-\subsection{Goal}
+
+
+\section{Senior Design 1}
+\subsection{Sprint 0 : 2/1/2026 - 2/15/2026}
+\subsubsection{Goal}
 Our goal for Sprint 0 is to set the foundation of our project and to establish a clear semester plan.
-\subsection{Sprint Planning}
+\subsubsection{Sprint Planning}
 The focus of Sprint 0 is to plan the foundation required to establish a clear semester plan. Our team talked about our skills, preferred programming languages, experience, and what we would each like to do in order to figure out everyone's roles and responsibilities. This will help us figure out what each member needs to develop and learn this semester and clear up any questions before we start implementation. 
 
 \begin{itemize}
@@ -132,7 +135,7 @@ The focus of Sprint 0 is to plan the foundation required to establish a clear se
 
 \end{itemize}
 
-\subsection{Sprint Review}
+\subsubsection{Sprint Review}
 The team reviewed the following:
 
 \begin{itemize}
@@ -148,7 +151,7 @@ The team reviewed the following:
 
 \end{itemize}
 
-\subsection{Sprint Retrospective}
+\subsubsection{Sprint Retrospective}
 The team discussed:
 
 \begin{itemize}
@@ -165,11 +168,11 @@ The team discussed:
 \end{itemize}
 
 
-\section{Sprint 1 : 2/15/2026 - 3/1/2026}
-\subsection{Goal}
+\subsection{Sprint 1 : 2/15/2026 - 3/1/2026}
+\subsubsection{Goal}
 Our goal for Sprint 1 is to complete the design proposal and team contract with the focus on developing the skills and knowledge required for each team role while working on each respective assigned tasks.
 
-\subsection{Sprint Planning}
+\subsubsection{Sprint Planning}
 During the 2/16/2026 meeting, all team members were present and Sprint 1 tasks were assigned. Each team member received role specific responsibilities to work on building a basic skeleton and low implementation of the project. The team aims to have a functional backbone of the system set up, dockerized, and capable of running on all team members' machines by the end of the sprint. All tasks were added to Jira, and each member is responsible for updating their task progress throughout the sprint.
 
 \begin{itemize}
@@ -201,7 +204,7 @@ During the 2/16/2026 meeting, all team members were present and Sprint 1 tasks w
 
 \end{itemize}
 
-\subsection{Sprint Review}
+\subsubsection{Sprint Review}
 The team reviewed the following:
 \begin{itemize}
     \item What was completed during the sprint:
@@ -231,7 +234,7 @@ The team reviewed the following:
     \end{itemize}
 \end{itemize}
 
-\subsection{Sprint Retrospective}
+\subsubsection{Sprint Retrospective}
 The team discussed:
 
 \begin{itemize}
@@ -261,11 +264,10 @@ The team discussed:
 \end{itemize}
 
 
-\section{Sprint 2 : 3/1/2026 - 3/15/2026}
-\subsection{Goal}
+\subsection{Sprint 2 : 3/1/2026 - 3/15/2026}
+\subsubsection{Goal}
 Establish the core cloud infrastructure for SentinelGrid so we can move beyond a local Docker only setup. By the end of Sprint 2, the team aims to have the backend prepared for cloud deployment, the database configured for real log storage, at least one honeypot connected to the backend log pipeline, and the frontend prepared for integration with live API data. 
-
-changed meeting times to mondays at 1:30
+Also changed meeting times to mondays at 1:30
 \subsection{Sprint Planning}
 Sprint 2 focuses on turning SentinelGrid from a local prototype into the first version of a cloud-connected cybersecurity monitoring platform. The priority is to deploy or prepare the backend and database in the cloud, confirm that honeypot logs can be accepted and stored through the API, and ensure the frontend can begin consuming real backend data. Since this is the first infrastructure sprint of the new phase, the emphasis is on reliability, connectivity, and end-to-end data flow rather than advanced analytics or polished UI features.
 
@@ -308,31 +310,72 @@ Sprint 2 focuses on turning SentinelGrid from a local prototype into the first v
 
 \end{itemize}
 
-\subsection{Sprint Review}
+\subsubsection{Sprint Review}
 The team reviewed the following:
 
 \begin{itemize}
     \item What was completed during the sprint:
+    \begin{itemize}
+        \item Set up the cloud VPS environment for deploying SentinelGrid services
+        \item Successfully deployed the FastAPI backend and connected it to the PostgreSQL database
+        \item Implemented backend API endpoints for receiving and storing honeypot logs
+        \item Connected the Cowrie honeypot to the backend and verified log ingestion
+        \item Continued development of the React dashboard and integrated live API data
+        \item Expanded the data preprocessing pipeline and began extracting session-level features for future analysis
+        \item Updated project documentation for deployment, backend setup, and database configuration
+    \end{itemize}
+
     \item What worked well:
+    \begin{itemize}
+        \item Team members were able to work in parallel on separate components with minimal merge conflicts
+        \item Cloud deployment allowed everyone to test against the same backend environment
+        \item Regular communication through Discord and weekly meetings helped resolve integration issues quickly
+    \end{itemize}
+
     \item Feedback received:
+    \begin{itemize}
+        \item Continue improving documentation for deployment and environment setup
+        \item Ensure all API endpoints are consistently tested before frontend integration
+        \item Begin thinking about how collected attack data will be processed and categorized later down the road 
+    \end{itemize}
+
     \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \begin{itemize}
+        \item Added tasks for automatic log forwarding from honeypots
+        \item Added backend analytics endpoints for session summaries and attacker statistics
+    \end{itemize}
+
 \end{itemize}
 
-\subsection{Sprint Retrospective}
+\subsubsection{Sprint Retrospective}
 The team discussed:
 
 \begin{itemize}
     \item What went well during the sprint:
+    \begin{itemize}
+        \item The backend, database, and infrastructure were successfully connected into a functioning system
+        \item Team collaboration remained consistent and everyone completed their assigned sprint tasks
+        \item Early integration testing helped identify any issues between project components
+    \end{itemize}
+
     \item What challenges or obstacles were encountered:
+    \begin{itemize}
+        \item Integrating multiple independently developed components required additional debugging
+        \item Some frontend features had to wait until backend APIs were finalized
+    \end{itemize}
+
     \item What could be improved in future sprints:
-    \item Action items to implement in the next sprint:
+    \begin{itemize}
+        \item Perform integration testing more frequently throughout development
+        \item Define API contracts earlier to reduce frontend and backend dependency issues
+    \end{itemize}
 \end{itemize}
 
-\section{Sprint 3 : 3/15/2026 - 3/29/2026}
-\subsection{Goal}
+\subsection{Sprint 3 : 3/15/2026 - 3/29/2026}
+\subsubsection{Goal}
 Expand SentinelGrid from a cloud-connected prototype into a more complete live cybersecurity monitoring platform. By the end of Sprint 3, the team aims to stabilize the deployed infrastructure, support multiple honeypot nodes, improve structured log storage and analytics queries, complete the main dashboard views, and prepare the ML pipeline for anomaly detection, clustering, and backend integration.
 
-\subsection{Sprint Planning}
+\subsubsection{Sprint Planning}
 Sprint 3 focuses on system completion, analytics, and stability. After establishing the cloud deployment and initial log-ingestion pipeline in Sprint 2, this sprint will extend SentinelGrid into a more functional honeynet platform with multiple honeypots, improved database performance, new backend analytics endpoints, and a more complete React dashboard. In parallel, the ML/data pipeline will move from preprocessing and baseline feature extraction toward clustering and anomaly scoring so that attack sessions can later be surfaced as higher-level patterns rather than raw logs alone. ML will also explore the possibility of labeling data for supervised classification 
 
 \begin{itemize}
@@ -378,62 +421,609 @@ Sprint 3 focuses on system completion, analytics, and stability. After establish
 
 \end{itemize}
 
-\subsection{Sprint Review}
+\subsubsection{Sprint Review}
+
 The team reviewed the following:
 
 \begin{itemize}
-    \item What was completed during the sprint:
-    \item What worked well:
-    \item Feedback received:
-    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \item \textbf{What was completed during the sprint:}
+    \begin{itemize}
+        \item Successfully deployed Cowrie (SSH) honeypots
+        \item Implemented automatic log forwarding from each honeypot to the FastAPI backend using REST API endpoints
+        \item Improved the PostgreSQL database schema by separating logs into structured tables and adding indexes on timestamp, source IP, session ID, and event type to improve query performance
+        \item Expanded the React frontend with the Live Attack Feed, Session Explorer, and Attack Analytics pages 
+        \item Built the initial machine learning pipeline for preprocessing session data, extracting behavioral features, performing K-Means clustering, and detecting anomalous sessions using Isolation Forest 
+        \item Established a standardized backend output format for machine learning results to simplify future dashboard integration
+    \end{itemize}
+
+    \item \textbf{What worked well:}
+    \begin{itemize}
+        \item Parallel development allowed frontend, backend, infrastructure, and machine learning tasks to progress simultaneously with minimal blocking
+        \item The modular FastAPI architecture made it straightforward to add new analytics endpoints without affecting existing functionality
+        \item The machine learning feature engineering pipeline successfully generated meaningful behavioral features that separated different attacker activities into distinct clusters with the use of kmeans
+    \end{itemize}
+
+    \item \textbf{Feedback received:}
+    \begin{itemize}
+        \item Improve dashboard filtering options to better navigate large numbers of attack sessions
+        \item Continue improving the visual design and responsiveness of dashboard components
+        \item Increase automation for infrastructure deployment and database maintenance where possible
+    \end{itemize}
+
+    \item \textbf{Updates made to the product backlog (new items, changes in scope, or priority adjustments):}
+    \begin{itemize}
+        \item Added support for additional honeypot services such as FTP, Redis, and MySQL
+        \item Prioritize backend performance optimization for larger log volumes
+        \item Plan implementation of heuristic attack labeling and decision rules for adaptive honeypot deployment.
+    \end{itemize}
+
 \end{itemize}
 
-\subsection{Sprint Retrospective}
+\subsubsection{Sprint Retrospective}
+
 The team discussed:
 
 \begin{itemize}
-    \item What went well during the sprint:
-    \item What challenges or obstacles were encountered:
-    \item What could be improved in future sprints:
-    \item Action items to implement in the next sprint:
+    \item \textbf{What went well during the sprint:}
+    \begin{itemize}
+        \item Infrastructure became considerably more stable, allowing continuous collection of live attack data throughout the sprint
+        \item Team members remained productive by working independently on well-defined components while communicating regularly through GitHub and sprint meetings
+        \item Machine learning experiments successfully demonstrated that behavioral clustering and anomaly detection could identify different categories of attacker activity
+        \item The dashboard evolved into a functional monitoring platform suitable for demonstrating live cyber attacks and analytics
+    \end{itemize}
+
+    \item \textbf{What challenges or obstacles were encountered:}
+    \begin{itemize}
+        \item Some dashboard queries became slower as the amount of collected data increased before database indexes were optimized
+        \item Live cloud deployments required additional monitoring and debugging to ensure reliable log forwarding
+    \end{itemize}
+
+    \item \textbf{What could be improved in future sprints:}
+    \begin{itemize}
+        \item Increase automated testing for backend APIs and frontend components before deployment
+        \item Improve deployment automation
+        \item Expand feature engineering using additional temporal and behavioral metrics to improve machine learning performance.
+        \item Continue refining the dashboard interface to make navigation more intuitive for non technical users
+    \end{itemize}
+
+    \item \textbf{Action items to implement in the next sprint:}
+    \begin{itemize}
+        \item Develop heuristic attacker labeling and decision rules for automated attack classification
+        \item Expand support for additional honeypot protocols and larger scale deployments
+    \end{itemize}
+
 \end{itemize}
 
-\section{Sprint 5 : 4/12/2026 - 4/26/2026}
-\subsection{Goal}
-...
+\subsection{Sprint 4 : 4/12/2026 - 4/26/2026}
+\subsubsection{Goal}
+Integrate all major SentinelGrid components and prepare for the Preliminary Design Review. By the end of Sprint 4, the team aims to demonstrate a fully functioning pipeline from honeypot attack collection through backend processing, database storage, planned machine learning analysis + pipeline, with dashboard visualization.
 
-\subsection{Sprint Planning}
-[Description/Summary...]
+\subsubsection{Sprint Planning}
+Sprint 4 focuses on integration, testing, and documentation. After completing the core infrastructure during the previous sprint, this sprint will ensure all currently implemented project components work reliably. The team will also prepare documentation and required information and materials for the the Preliminary Design Document.
+We will perpare for Senior Design 2, leaving us with a good place to start once the new semester starts.
 
 \begin{itemize}
     \item What can we deliver by the end of this sprint? 
+    
+    \begin{itemize}
+    \item Stable dashboard displaying live attack information
+    \item Backend integration for ML analysis results
+    \item Preliminary Design Documentation
+    \item Additional testing and bug fixes across the system
+    \end{itemize}
    
     \item How will we build it? 
+    \\ Continue parallel development while prioritizing component integration, testing, documentation, and bug fixes. Frequent integration meetings will be held to quickly resolve interface and deployment issues. The Preliminary Design Document will be split up between roles and each member will have their designated sections they will need to complete 
+
   
     \item What must be done vs nice:
     \\\textbf{Must be done:}
+    \begin{itemize}
+    \item Complete dashboard integration
+    \item Perform integration and deployment testing
+    \item Complete Preliminary Design documentation
+    \end{itemize}
+    
     \\\textbf{Nice to have:}
+    \begin{itemize}
+    \item Improve dashboard responsiveness
+    \item Additional analytics visualizations
+    \item Better deployment automation
+    \item Additional API documentation
+    \end{itemize}
+    
 
 \end{itemize}
 
-\subsection{Sprint Review}
+\subsubsection{Sprint Review}
 The team reviewed the following:
 
 \begin{itemize}
     \item What was completed during the sprint:
+    \begin{itemize}
+    \item Integrated backend APIs with frontend dashboard
+    \item Connected ML analysis pipeline with backend processing
+    \item Completed Preliminary Design documentation 
+    \item Fixed multiple integration bugs discovered during testing
+    \end{itemize}
+
     \item What worked well:
-    \item Feedback received:
+    \begin{itemize}
+    \item Integration testing greatly improved overall system reliability
+    \item Clear communication minimized merge conflicts
+    \end{itemize}
     \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \begin{itemize}
+    \item Prioritize multiple honeypot deployment
+    \item Expand adaptive honeypot research
+    \item Improve dashboard usability
+    \end{itemize}
+
 \end{itemize}
 
-\subsection{Sprint Retrospective}
+\subsubsection{Sprint Retrospective}
 The team discussed:
 
 \begin{itemize}
-    \item What went well during the sprint:
     \item What challenges or obstacles were encountered:
+    
+    \begin{itemize}
+    \item Integration testing uncovered unexpected API inconsistencies
+    \item Coordinating updates across multiple components required additional effort
+    \end{itemize}
+    
     \item What could be improved in future sprints:
+    \begin{itemize}
+    \item Begin integration testing earlier
+    \item Improve API documentation
+    \item Expand testing
+    \end{itemize}
     \item Action items to implement in the next sprint:
+    \begin{itemize}
+    \item Begin planning the implementing adaptive honeynet features
+    \item Expand supported honeypot services
+    \end{itemize}
 \end{itemize}
+
+\section{Senior Design 2}
+\subsection{Sprint 5: 5/13/2026 - 5/27/2026}
+\subsubsection{Goal}
+Begin Senior Design II by completing checkin and prepare for our Critical Design Review (CDR). The focus will be refining the overall architecture, improving deployment reliability, and planning the remaining features required for the final demonstration.
+
+\subsubsection{Sprint Planning}
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \begin{itemize}
+    \item CDR preparation 
+    \item Improved deployment workflow
+    \item Updated project backlog and implementation schedule
+    \end{itemize}
+   
+    \item How will we build it? 
+    Continue improving existing components while incorporating review and peer feedback to prepare for the Critical Design Review.
+    \\\textbf{Must be done:}
+
+    \begin{itemize}
+    \item Prepare for the CDR
+    \item Practice Presentation
+    \item Improve documentation and plan the rest of SD2
+    \end{itemize}
+    
+    \textbf{Nice to have:}
+    
+    \begin{itemize}
+    \item Improve dashboard appearance
+    \item Additional testing automation
+    \item begin deployment of additional honeypots
+    \end{itemize}
+    
+\end{itemize}
+
+\subsubsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \begin{itemize}
+        \item Started the preperation of the Critical Design Review presentation.
+        \item Refined the deployment process to simplify backend and database setup.
+        \item Reviewed the remaining product backlog and prioritized features for the remainder of the semester.
+    \end{itemize}
+
+    \item What worked well:
+    \begin{itemize}
+        \item Team members collaborated effectively on presentation preparation.
+        \item Existing project components were stable enough to demonstrate the current system.
+        \item Documentation improvements made it easier to explain the system architecture and development progress.
+    \end{itemize}
+    \item Feedback received:
+    \begin{itemize}
+        \item Checkin did not go as planned, but we will use the feedback to get back on track 
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What challenges or obstacles were encountered:
+    \begin{itemize}
+            \item Balancing presentation preparation with continued development
+            \item Identifying deployment issues across different development environments
+        \end{itemize}
+
+    \item Action items to implement in the next sprint:
+    \begin{itemize}
+        \item Begin implementing the remaining high priority backlog items
+        \item Expand honeypot deployment and integration testing
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Sprint 6 : 5/27/2026 - 6/10/2026}
+\subsubsection{Goal}
+Expand SentinelGrid into a complete adaptive honeynet by deploying multiple honeypot services and containerizing each deployment with Docker for scalable management.
+
+\subsubsection{Sprint Planning}
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \begin{itemize}
+    \item SSH, HTTP, FTP, Redis, MySQL and SMTP honeypots
+    \item Docker deployment for every honeypot
+    \item Centralized logging
+    \item Unified backend support
+    \end{itemize}
+   
+    \item How will we build it? 
+    Develop and deploy each honeypot independently before integrating them into the shared backend infrastructure.
+
+  
+    \item Must be done:
+    
+    \begin{itemize}
+    \item Deploy all supported honeypots
+    \item Dockerize deployments
+    \item Normalize logs
+    \item Backend compatibility
+    \end{itemize}
+    
+    \textbf{Nice to have:}
+    
+    \begin{itemize}
+    \item Automatic deployment scripts
+    \item Health monitoring
+    \item Container scaling
+    \end{itemize}
+
+\end{itemize}
+
+\subsubsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \begin{itemize}
+        \item Successfully deployed SSH (Cowrie), HTTP, FTP and will work on others like Redis, MySQL, and SMTP honeypot services in the next sprint 
+        \item Containerized each honeypot using Docker for consistent deployment and easier management
+        \item Configured centralized log collection to forward events from all honeypots to the backend.
+        \item Extended the backend to support multiple honeypot types with a unified logging interface
+    \end{itemize}
+    \item What worked well:
+       \begin{itemize}
+        \item Docker significantly simplified deployment and testing across different honeypot services
+        \item The modular backend architecture allowed new honeypots to be integrated with minimal changes
+        \item Independent development of each honeypot allowed easier testing of each type
+    \end{itemize}
+    
+    \item Feedback received:
+    \begin{itemize}
+        \item Add monitoring for container health and service availability
+        \item Ensure consistent metadata is captured across all honeypot logs for future analytics
+    \end{itemize}
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \begin{itemize}
+        \item Added automated Docker deployment and configuration scripts
+        \item Add container health monitoring and automatic restart capabilities
+        \item Prioritized adaptive honeypot redistribution using the machine learning decision engine
+        \item Planned dashboard enhancements to visualize activity across multiple honeypot types
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What challenges or obstacles were encountered:
+    \begin{itemize}
+        \item Different honeypots produced varying log formats, requiring additional normalization logic
+        \item Some Docker networking and port configuration issues delayed deployment
+        \item Maintaining consistent configurations across multiple containers required additional coordination
+        \item Took a while to get the honeypots up and running 
+    \end{itemize}
+    
+
+    \item What could be improved in future sprints:
+     \begin{itemize}
+        \item Automate deployment and configuration using scripts
+        \item Improve monitoring and alerting for container failures
+        \item Create standardized deployment templates to simplify adding new honeypot services
+    \end{itemize}
+
+    \item Action items to implement in the next sprint:
+     \begin{itemize}
+        \item Integrate the machine learning pipeline with the newly deployed honeypots
+        \item Begin developing adaptive honeypot redistribution based on detected attack behavior
+        \item Update the frontend to display activity from all deployed honeypot services
+        \item Finish the implementation of the variety of honeypots 
+    \end{itemize}
+\end{itemize}
+
+
+
+\subsection{Sprint 7 : 6/10/2026 - 6/24/2026}
+\subsubsection{Goal}
+Develop behavioral analysis engine by generating heuristic attacker profiles and implementing decision rules that recommend optimal honeypot deployments based on recent attack behavior.
+
+
+\subsubsection{Sprint Planning}
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \begin{itemize}
+    \item Behavioral feature engineering
+    \item Heuristic attacker labeling
+    \item Decision engine
+    \item Recommendation API
+    \item Dashboard visualization
+    \end{itemize}
+    
+    \item How will we build it? 
+\\
+
+    Continue extending the machine learning pipeline by combining clustering, feature engineering, anomaly detection, heuristic rules, and backend integration.
+
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \begin{itemize}
+    \item Behavioral analysis
+    \item Decision rules
+    \item Backend APIs
+    \item Frontend visualization
+    \end{itemize}
+    
+    \textbf{Nice to have:}
+    \begin{itemize}
+    \item Automatic deployment recommendations
+    \item Confidence scores
+    \item Recommendation history
+    \end{itemize}
+
+\end{itemize}
+
+\subsubsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \begin{itemize}
+        \item Developed a behavioral analysis pipeline that extracts attacker behavior metrics from normalized session data
+        \item Implemented heuristic labeling to classify attacker profiles based on clustering results, anomaly detection, and behavioral features
+        \item Built a decision engine that recommends appropriate honeypot deployments using predefined decision rules
+        \item Integrated recommendation APIs into the backend for real time access results
+    \end{itemize}
+    \item What worked well:
+     \begin{itemize}
+        \item Combining feature engineering with clustering and anomaly detection produced meaningful attacker profiles
+        \item Backend APIs integrated smoothly with the frontend, enabling near real time visualization of recommendations on a set interval
+    \end{itemize}
+    \item Feedback received:
+    \begin{itemize}
+        \item Include confidence scores to indicate the reliability of heuristic classifications
+        \item Consider storing historical recommendations to evaluate changes in attacker behavior over time
+    \end{itemize}
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+    \begin{itemize}
+        \item Add recommendation history and trend analysis
+        \item Added confidence scoring for heuristic attacker profiles
+        \item Prioritized automatic honeypot deployment based on decision engine recommendations
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What challenges or obstacles were encountered:
+    \begin{itemize}
+        \item Fine tuning heuristic thresholds required multiple iterations to balance accuracy and generalization.
+        \item Integrating outputs from clustering and anomaly detection into a unified recommendation 
+        \item Processing larger log datasets increased execution time 
+    \end{itemize}
+
+    \item What could be improved in future sprints:
+    \begin{itemize}
+        \item Optimize feature engineering and model execution for improved performance
+        \item Expand behavioral features to support additional honeypot services and attack types
+    \end{itemize}
+    
+    \item Action items to implement in the next sprint:
+    \begin{itemize}
+        \item Implement automatic honeypot redistribution the decision engine
+    \end{itemize}
+\end{itemize}
+
+
+
+\subsection{Sprint 8 : 6/24/2026 - 7/8/2026}
+\subsubsection{Goal}
+Integrate the adaptive honeypot recommendation engine into the dashboard while providing users with interactive controls for manually managing honeypot deployments and visualizing live attacks.
+
+
+\subsubsection{Sprint Planning}
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \begin{itemize}
+    \item Adaptive dashboard
+    \item Live world map
+    \item Honeypot distribution controls
+    \item Deployment recommendations
+    \end{itemize}
+   
+    \item How will we build it?
+    \\Connect backend recommendation APIs directly to the React dashboard while expanding visualization capabilities
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    \begin{itemize}
+    \item Recommendation dashboard
+    \item World attack map
+    \item Manual deployment controls
+    \item Live updates
+    \end{itemize}
+
+    \\\textbf{Nice to have:}
+    \begin{itemize}
+\item Geographic statistics
+\item Notification settings
+\item Moving around map and zoom
+
+\end{itemize}
+
+\end{itemize}
+
+\subsubsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \begin{itemize}
+        \item Integrated the adaptive honeypot recommendation engine into the dashboard
+        \item Developed a live world map displaying attacker locations, ips, event types, and active attack events 
+        \item Implemented manual honeypot deployment controls, allowing users redistribute honeypot services
+        \item Connected backend recommendation APIs to the frontend, providing live deployment recommendations based on recent attacker behavior
+        \item Added automatic dashboard updates to display current honeypot distribution without requiring manual refreshes.
+    \end{itemize}
+    \item What worked well:
+    \begin{itemize}
+        \item Backend APIs integrated smoothly with the dashboard, enabling real time communication between the recommendation engine and frontend
+        \item Interactive visualizations made it easier to understand attack activity and deployment decisions.
+        \item Manual deployment controls provided users with flexibility while maintaining automated recommendations.
+    \end{itemize}
+    
+    \item Feedback received:
+    \begin{itemize}
+        \item Improve geographic visualizations by providing additional country and regional statistics.
+        \item Allow users to filter attacks by honeypot type, attacker profile, and time range.
+    \end{itemize}
+    
+    \item Updates made to the product backlog (new items, changes in scope, or priority adjustments):
+     \begin{itemize}
+        \item Added geographic analytics and attack trend reporting.
+        \item Planned enhanced filtering and search capabilities within the dashboard
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Sprint Retrospective}
+The team discussed:
+
+\begin{itemize}
+    \item What challenges or obstacles were encountered:
+    \begin{itemize}
+        \item Synchronizing backend recommendations with manual deployment actions required careful state management.
+        \item Displaying geographic attack information accurately depended on external IP geolocation services.
+        \item Testing overall deployment
+    \end{itemize}
+
+    \item What could be improved in future sprints:
+    \begin{itemize}
+        \item Expand dashboard customization options and filtering capabilities.
+        \item Improve scalability for larger numbers of honeypot deployments and concurrent attacks.
+    \end{itemize}
+    \item Action items to implement in the next sprint:
+     \begin{itemize}
+        \item Conduct final system testing and performance evaluation.
+        \item Complete project documentation and user guides or readmes for github.
+        \item Prepare the final project demonstration and presentation.
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Sprint 9 : 7/8/2026 - 7/22/2026}
+\subsubsection{Goal}
+Prepare SentinelGrid for final demonstration by completing testing, documentation, performance optimization, and presentation materials.
+
+\subsubsection{Sprint Planning}
+
+\begin{itemize}
+    \item What can we deliver by the end of this sprint? 
+    \begin{itemize}
+    \item Final dashboard
+    \item Complete documentation
+    \item Demo ready system
+    \item Final presentation
+    \end{itemize}
+
+   
+    \item How will we build it? 
+    \\ Focus on polishing existing features, fixing bugs, improving usability, and preparing demonstration materials.
+
+  
+    \item What must be done vs nice:
+    \\\textbf{Must be done:}
+    
+    \begin{itemize}
+    \item Final bug fixes
+    \item Documentation
+    \item User guide
+    \item Presentation
+    \item Demo preparation
+    \end{itemize}
+    
+    \\\textbf{Nice to have:}
+    \begin{itemize}
+    \item UI polish
+    \item Performance optimization
+    \item Additional analytics
+    \item Stretch features if time permits
+    \end{itemize}
+    
+\end{itemize}
+
+\subsubsection{Sprint Review}
+The team reviewed the following:
+
+\begin{itemize}
+    \item What was completed during the sprint:
+    \begin{itemize}
+        \item Completed end to end testing of the SentinelGrid platform, including the frontend, backend, machine learning pipeline, and Dockerized honeypot infrastructure
+        \item Fixed remaining bugs and improved system stability, performance, and overall usability
+        \item Finalized technical documentation, installation instructions, architecture diagrams, and user guides.
+        \item Prepared the final project presentation and demonstration showcasing adaptive honeypot deployment, behavioral analysis, and live attack monitoring
+        \item Performed performance evaluations to verify the system is within acceptable execution times
+    \end{itemize}
+    \item What worked well:
+     \begin{itemize}
+        \item Comprehensive documentation made deployment and system maintenance more straightforward.
+        \item Integration testing confirmed reliable communication between the dashboard, backend services, machine learning engine, and honeypot containers.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Sprint Retrospective}
+The team discussed:
+\begin{itemize}
+    \item What went well during the sprint:
+     \begin{itemize}
+        \item Successfully delivered all planned project objectives and integrated every major component into a cohesive platform
+        \item Final testing validated the stability and reliability of the complete SentinelGrid system 
+        \item Documentation and user guides improved the accessibility and maintainability of the project
+    \end{itemize}
+
+\end{itemize}
+
+
 
 \end{document}

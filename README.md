@@ -23,7 +23,7 @@ SentinelGrid is a cybersecurity analytics platform designed to capture, analyze,
   Develops the visual dashboard, implements live attack feeds, charts, and user friendly analytics views.
 
 - **Yama – ML & Threat Analysis Engineer**  
-  Designs feature extraction pipelines, implements clustering and anomaly detection models, and evaluates attack patterns.
+  Designs feature extraction pipelines, implements clustering and anomaly detection models, behavioral analysis, heuristic labeling, and honeypot decision rules.
 
 ## File Structure
 ### File Structure 
@@ -41,8 +41,7 @@ SENTINELGRID/
 ```
 
 ## Documentation
-- `documentation/minutes.tex` : All Scrum and meeting minutes are updated and stored here. This file is updated after every meeting and tracks the team's Scrum activities such as sprint planning and reviews. 
+- `documentation/minutes.tex` : All Scrum and meeting minutes are updated and stored here. This file is updated on Overleaf throughout the semesters and tracks the team's Scrum activities such as sprint planning and reviews. 
 You can view it here: [Project Meeting Minutes (PDF)](documentation/minutes.pdf).
-- `documentation/yamasdoc.tex`: Yama's personal progress documentation are updated and stored here. This file contains weekly progress updates detailing contributions towards the project. 
-You can view it here: [Yama's Documentation (PDF)](documentation/yamasdoc.pdf)
+
 - `local_testing.txt`: This is where you can find instructions for local testing on the Sentinel Grid Cowrie honeypot. 
