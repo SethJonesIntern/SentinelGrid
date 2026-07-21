@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api } from "../lib/api";
+import { api, API_URL } from "../lib/api";
 import { HONEYPOT_TYPES, TYPE_COLORS, TYPE_LABELS } from "../lib/honeynet";
 import RaceBarChart from "../components/RaceBarChart";
 
@@ -34,6 +34,11 @@ function orderedTypes(counts: Record<string, number>): string[] {
   return [...known, ...unknown];
 }
 
+type HistoryEntry = {
+  counts: Record<string, number>;
+  recorded_at: string;
+};
+
 export default function DemoPage() {
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [loadingState, setLoadingState] = useState(true);
@@ -53,6 +58,23 @@ export default function DemoPage() {
   const [submittingManual, setSubmittingManual] = useState(false);
   const manualTotal= SCALABLE_TYPES.reduce((s, hp) => s + (manualCounts[hp] ?? 0), 0);
   const manualValid= manualTotal === DISTRIBUTABLE;
+
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  useEffect(() => {
+    function fetchHistory() {
+      fetch(`${API_URL}/distribution/history`)
+        .then((r) => r.json())
+        .then((j) => {
+          const entries: HistoryEntry[] = Array.isArray(j?.history) ? j.history : [];
+          setHistory(entries.slice(-5).reverse());
+        })
+        .catch(() => {});
+    }
+    fetchHistory();
+    const id = window.setInterval(fetchHistory, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   async function loadState() {
     try {
@@ -265,12 +287,10 @@ export default function DemoPage() {
           <RaceBarChart data={pieData} height={240} />
           <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
             {pieData.map((p) => {
-              const pct = total > 0 ? Math.round((p.value / total) * 100) : 0;
               return (
                 <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
                   <span style={{ width: 8, height: 8, borderRadius: 2, background: p.fill, flexShrink: 0 }} />
                   <span style={{ color: "#8896b0", flex: 1, fontFamily: "'Space Mono',monospace" }}>{p.label}</span>
-                  <span style={{ color: "#4b5f7c", fontSize: 10, minWidth: 28, textAlign: "right" }}>{pct}%</span>
                   <span style={{ color: p.fill, fontWeight: 700, minWidth: 24, textAlign: "right" }}>{p.value}</span>
                 </div>
               );
@@ -278,7 +298,114 @@ export default function DemoPage() {
           </div>
         </div>
       </div>
+
+      {/* Distribution History */}
+      {history.length > 0 && (
+        <div style={panel}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={cardTitle}>Distribution History</div>
+            <div style={{ ...subtle, marginTop: 4 }}>Last {history.length} unique distributions </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+            {history.map((entry, i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <RadarChart counts={entry.counts} size={280} />
+                <div style={{ fontSize: 10, color: "#4b5f7c", fontFamily: "'Space Mono',monospace", textAlign: "center" }}>
+                  {(() => {
+                    const raw = entry.recorded_at;
+                    const normalized = /[Zz]$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw.replace(" ", "T") + "Z";
+                    const d = new Date(normalized);
+                    return isNaN(d.getTime()) ? raw : d.toLocaleString();
+                  })()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+const RADAR_AXES = ["ssh", "http", "mysql", "redis", "ftp", "smtp"] as const;
+const FLEXIBLE_SLOTS = 6;
+const BASELINE = 1;
+const MAX_VALUE = FLEXIBLE_SLOTS + BASELINE; // max per service = 7
+const RINGS = [2, 4, 6];
+
+function allocateCounts(counts: Record<string, number>): Record<string, number> {
+  // API now returns literal per-type counts (already summing to 12) — use them as-is.
+  return Object.fromEntries(RADAR_AXES.map((key) => [key, counts[key] ?? counts[`${key}_honeypot`] ?? 0]));
+}
+
+function RadarChart({ counts: rawCounts, size }: { counts: Record<string, number>; size: number }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = size * 0.38;
+  const n = RADAR_AXES.length;
+
+  function axisPoint(i: number, r: number): [number, number] {
+    const angle = (Math.PI / 2) - (2 * Math.PI * i) / n;
+    return [cx + r * Math.cos(angle), cy - r * Math.sin(angle)];
+  }
+
+  // Ring polygons
+  const ringPaths = RINGS.map((ring) => {
+    const pts = RADAR_AXES.map((_, i) => {
+      const r = (ring / MAX_VALUE) * R;
+      return axisPoint(i, r).join(",");
+    });
+    return pts.join(" ");
+  });
+
+  // Data polygon — counts come straight from the API and already sum to 12
+  const counts = allocateCounts(rawCounts);
+  const dataPoints = RADAR_AXES.map((key, i) => {
+    const count = counts[key];
+    const r = Math.min((count / MAX_VALUE) * R, R);
+    return axisPoint(i, r);
+  });
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ") + " Z";
+
+  const labelCounts = RADAR_AXES.map((key) => counts[key]);
+
+  return (
+    <svg width={size} height={size} style={{ overflow: "visible" }}>
+      {/* Ring grid */}
+      {ringPaths.map((pts, ri) => (
+        <polygon key={ri} points={pts} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+      ))}
+      {/* Ring labels */}
+      {RINGS.map((ring) => {
+        const [lx, ly] = axisPoint(0, (ring / MAX_VALUE) * R);
+        return (
+          <text key={ring} x={lx + 4} y={ly} fill="rgba(255,255,255,0.2)" fontSize={8} fontFamily="'Space Mono',monospace">{ring}</text>
+        );
+      })}
+      {/* Axis spokes */}
+      {RADAR_AXES.map((_, i) => {
+        const [ex, ey] = axisPoint(i, R);
+        return <line key={i} x1={cx} y1={cy} x2={ex} y2={ey} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />;
+      })}
+      {/* Data fill */}
+      <path d={dataPath} fill="rgba(18,224,216,0.18)" stroke="#12e0d8" strokeWidth={1.5} />
+      {/* Data dots */}
+      {dataPoints.map(([px, py], i) => (
+        <circle key={i} cx={px} cy={py} r={3} fill="#12e0d8" />
+      ))}
+      {/* Axis labels */}
+      {RADAR_AXES.map((key, i) => {
+        const [lx, ly] = axisPoint(i, R + 20);
+        const color = TYPE_COLORS[key as keyof typeof TYPE_COLORS] ?? "#8896b0";
+        const label = TYPE_LABELS[key as keyof typeof TYPE_LABELS] ?? key;
+        return (
+          <g key={key}>
+            <text x={lx} y={ly - 2} textAnchor="middle" fill={color} fontSize={9} fontWeight={700} fontFamily="'Space Mono',monospace">{label}</text>
+            <text x={lx} y={ly + 9} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize={8} fontFamily="'Space Mono',monospace">{labelCounts[i]}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
