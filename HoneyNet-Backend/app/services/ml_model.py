@@ -60,8 +60,16 @@ def _plan_path() -> Path:
 
 
 def _uniform() -> Dict[str, float]:
-    weight = 1 / len(HONEYPOT_TYPES)
-    return {hp: weight for hp in HONEYPOT_TYPES}
+    """
+    Even fallback distribution used when no ML plan is available.
+
+    Spread across the SCALABLE types only — FTP is excluded (weight 0) because
+    it can never take a distributable slot. Including it here would make
+    allocate() hand FTP a second honeypot, which the host can't actually run.
+    """
+    scalable = [hp for hp in HONEYPOT_TYPES if hp != _NON_SCALABLE]
+    weight = 1 / len(scalable)
+    return {hp: (0.0 if hp == _NON_SCALABLE else weight) for hp in HONEYPOT_TYPES}
 
 
 def adapt_distribution(raw: Dict[str, float]) -> Dict[str, float]:

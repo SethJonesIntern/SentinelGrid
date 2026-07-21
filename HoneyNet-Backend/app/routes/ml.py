@@ -19,6 +19,7 @@ from app.services.honeynet_state import (
 )
 from app.services.security import get_current_user, require_agent_token
 from app.services.ml_scheduler import defer_next_run, run_pipeline_once
+from app.services.distribution_history import get_history, record
 
 router = APIRouter()
 
@@ -41,6 +42,16 @@ def get_distribution():
     takes no input.
     """
     return {"distribution": predict_distribution()}
+
+
+@router.get("/distribution/history")
+def get_distribution_history():
+    """
+    The last few UNIQUE honeypot-count compositions the honeynet has run (change
+    log of the actual counts per type, summing to the total), most recent first.
+    Public — for the frontend to display how the mix has adapted.
+    """
+    return {"history": get_history()}
 
 
 @router.post("/distribution/refresh", dependencies=[Depends(get_current_user)])
@@ -160,6 +171,8 @@ def put_state(counts: Dict[str, int]):
     is a mapping of honeypot type -> count.
     """
     honeynet_state.set_counts(counts)
+    # The agent reports what's actually deployed — record it as the history.
+    record(honeynet_state.counts())
     return {"counts": honeynet_state.counts(), "total": honeynet_state.total}
 
 

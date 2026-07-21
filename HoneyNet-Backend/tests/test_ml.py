@@ -150,6 +150,55 @@ def test_set_counts_rejects_ftp(client, user_headers):
     assert r.status_code == 400
 
 
+def test_distribution_history_endpoint(client, agent_headers):
+    from app.services import distribution_history
+
+    distribution_history.clear()
+    # The agent reporting actual counts is what gets recorded.
+    reported = {"ssh": 3, "http": 2, "redis": 2, "mysql": 2, "ftp": 1, "smtp": 2}
+    client.put("/honeynet/state", json=reported, headers=agent_headers)
+
+    r = client.get("/distribution/history")  # public — no auth
+    assert r.status_code == 200
+    hist = r.json()["history"]
+    assert len(hist) == 1
+    assert hist[0]["counts"] == reported  # exactly what the agent reported
+    assert "recorded_at" in hist[0]
+
+
+def test_history_records_unique_and_caps_at_5():
+    from app.services import distribution_history as dh
+
+    dh.clear()
+    for i in range(7):  # 7 distinct compositions
+        dh.record({"ssh": i, "http": 0, "redis": 0, "mysql": 0, "ftp": 0, "smtp": 0})
+    dh.record({"ssh": 6, "http": 0, "redis": 0, "mysql": 0, "ftp": 0, "smtp": 0})  # already front, no-op
+
+    hist = dh.get_history()
+    assert len(hist) == 5  # capped at MAX_HISTORY
+    assert hist[0]["counts"]["ssh"] == 6  # most recent first
+    assert hist[-1]["counts"]["ssh"] == 2  # oldest kept (2..6)
+    dh.clear()
+
+
+def test_history_moves_existing_to_front():
+    from app.services import distribution_history as dh
+
+    def d(x):
+        return {"ssh": x, "http": 0, "redis": 0, "mysql": 0, "ftp": 0, "smtp": 0}
+
+    dh.clear()
+    dh.record(d(1))
+    dh.record(d(2))
+    dh.record(d(3))            # history (front->back): 3, 2, 1
+    dh.record(d(1))            # 1 already present -> move to front
+
+    order = [h["counts"]["ssh"] for h in dh.get_history()]
+    assert order == [1, 3, 2]  # 1 moved to front, still unique, no duplicate
+    assert len(order) == len(set(order))  # unique
+    dh.clear()
+
+
 def test_predict_distribution_reads_plan(monkeypatch, tmp_path):
     plan = {
         "recommended_honeypot_distribution": {
