@@ -105,7 +105,7 @@
 <div class="hud" id="stats">
   <div class="panel stat"><div class="val" id="stat-total">0</div><div class="lbl">EVENTS</div></div>
   <div class="panel stat"><div class="val" id="stat-unique">0</div><div class="lbl">UNIQUE IPS</div></div>
-  <div class="panel stat"><div class="val" id="stat-rate">0</div><div class="lbl">AVG/HR (24H)</div></div>
+  <div class="panel stat"><div class="val" id="stat-rate">0</div><div class="lbl">COUNTRIES</div></div>
 </div>
 
 <div class="hud panel" id="leaderboard">
@@ -646,7 +646,8 @@ function updateStats(){
   document.getElementById('stat-unique').textContent = geoCache.size;
   const now = Date.now();
   while(eventTimestamps.length && now - eventTimestamps[0] > 60000) eventTimestamps.shift();
-  document.getElementById('stat-rate').textContent = formatAvgPerHour(dbAvgPerHour24h);
+  const countries = new Set(Array.from(geoCache.values()).map(g => g && g.country).filter(Boolean));
+  document.getElementById('stat-rate').textContent = countries.size;
 }
 
 async function handleEvent(ev){
